@@ -3,7 +3,7 @@
 
 """Online evaluation metric module."""
 from __future__ import absolute_import
-
+import math
 import numpy
 from . import ndarray
 
@@ -261,9 +261,11 @@ class Perplexity(EvalMetric):
                 pred = pred*(1-ignore) + ignore
             loss -= ndarray.sum(ndarray.log(ndarray.maximum(1e-10, pred))).asscalar()
             num += pred.size
-        self.sum_metric += math.exp(loss/num)
-        self.num_inst += 1
+        self.sum_metric += loss
+        self.num_inst += num
 
+    def get(self):
+        return (self.name, math.exp(self.sum_metric/self.num_inst))
 
 ####################
 # REGRESSION METRICS
@@ -401,21 +403,31 @@ class CustomMetric(EvalMetric):
 
 # pylint: disable=invalid-name
 def np(numpy_feval, name=None, allow_extra_outputs=False):
-    """Create a customized metric from numpy function.
+    """Creates a custom evaluation metric that receives its inputs as numpy arrays.
 
     Parameters
     ----------
     numpy_feval : callable(label, pred)
-        Customized evaluation function.
-        This will get called with the labels and predictions
-        for a minibatch, each as NumPy arrays.  This function
-        should return a single float.
+        Custom evaluation function that receives labels and predictions for a minibatch
+        as numpy arrays and returns the corresponding custom metric as a floating point number.
     name : str, optional
-        The name of the metric.
-    allow_extra_outputs : bool
-        If true, the prediction outputs can have extra outputs.
-        This is useful in RNN, where the states are also produced
-        in outputs for forwarding.
+        Name of the custom metric.
+    allow_extra_outputs : bool, optional
+        Whether prediction output is allowed to have extra outputs. This is useful in cases
+        like RNN where states are also part of output which can then be fed back to the RNN
+        in the next step. By default, extra outputs are not allowed.
+
+    Returns
+    -------
+    float
+        Custom metric corresponding to the provided labels and predictions.
+
+    Example
+    -------
+    >>> def custom_metric(label, pred):
+    ...     return np.mean(np.abs(label-pred))
+    ...
+    >>> metric = mx.metric.np(custom_metric)
     """
     def feval(label, pred):
         """Internal eval function."""
@@ -425,13 +437,29 @@ def np(numpy_feval, name=None, allow_extra_outputs=False):
 # pylint: enable=invalid-name
 
 def create(metric, **kwargs):
-    """Create an evaluation metric.
+    """Creates evaluation metric from metric names or instances of EvalMetric
+    or a custom metric function.
 
     Parameters
     ----------
     metric : str or callable
-        The name of the metric, or a function
-        providing statistics given pred, label NDArray.
+        Specifies the metric to create.
+        This argument must be one of the below:
+
+        - Name of a metric.
+        - An instance of `EvalMetric`.
+        - A list, each element of which is a metric or a metric name.
+        - An evaluation function that computes custom metric for a given batch of
+          labels and predictions.
+
+    Examples
+    --------
+    >>> def custom_metric(label, pred):
+    ...     return np.mean(np.abs(label - pred))
+    ...
+    >>> metric1 = mx.metric.create('acc')
+    >>> metric2 = mx.metric.create(custom_metric)
+    >>> metric3 = mx.metric.create([metric1, metric2, 'rmse'])
     """
 
     if callable(metric):
