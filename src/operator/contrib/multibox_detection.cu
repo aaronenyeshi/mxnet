@@ -1,3 +1,4 @@
+#include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2016 by Contributors
  * \file multibox_detection.cu
@@ -10,8 +11,8 @@
 #define MULTIBOX_DETECTION_CUDA_CHECK(condition) \
   /* Code block avoids redefinition of cudaError_t error */ \
   do { \
-    cudaError_t error = condition; \
-    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+    hipError_t error = condition; \
+    CHECK_EQ(error, hipSuccess) << " " << hipGetErrorString(error); \
   } while (0)
 
 namespace mshadow {
@@ -32,7 +33,7 @@ __device__ void CalculateOverlap(const DType *a, const DType *b, DType *iou) {
 }
 
 template<typename DType>
-__global__ void DetectionForwardKernel(DType *out, const DType *cls_prob,
+__global__ void DetectionForwardKernel(hipLaunchParm lp,DType *out, const DType *cls_prob,
                                        const DType *loc_pred, const DType *anchors,
                                        DType *temp_space, const int num_classes,
                                        const int num_anchors, const float threshold,
@@ -40,8 +41,8 @@ __global__ void DetectionForwardKernel(DType *out, const DType *cls_prob,
                                        const float vy, const float vw,
                                        const float vh, const float nms_threshold,
                                        const bool force_suppress, const int nms_topk) {
-  const int nbatch = blockIdx.x;  // each block for each batch
-  int index = threadIdx.x;
+  const int nbatch = hipBlockIdx_x;  // each block for each batch
+  int index = hipThreadIdx_x;
   __shared__ int valid_count;
   out += nbatch * num_anchors * 6;
   cls_prob += nbatch * num_anchors * num_classes;
@@ -53,7 +54,7 @@ __global__ void DetectionForwardKernel(DType *out, const DType *cls_prob,
   __syncthreads();
 
   // apply prediction to anchors
-  for (int i = index; i < num_anchors; i += blockDim.x) {
+  for (int i = index; i < num_anchors; i += hipBlockDim_x) {
     DType score = -1;
     int id = 0;
     for (int j = 1; j < num_classes; ++j) {
@@ -112,7 +113,7 @@ __global__ void DetectionForwardKernel(DType *out, const DType *cls_prob,
   DType *src = out;
   DType *dst = temp_space;
   for (int width = 2; width < (size << 1); width <<= 1) {
-    int slices = (size - 1) / (blockDim.x * width) + 1;
+    int slices = (size - 1) / (hipBlockDim_x * width) + 1;
     int start = width * index * slices;
     for (int slice = 0; slice < slices; ++slice) {
       if (start >= size) break;
@@ -147,7 +148,7 @@ __global__ void DetectionForwardKernel(DType *out, const DType *cls_prob,
 
   if (src == temp_space) {
     // copy from temp to out
-    for (int i = index; i < size * 6; i += blockDim.x) {
+    for (int i = index; i < size * 6; i += hipBlockDim_x) {
       out[i] = temp_space[i];
     }
     __syncthreads();
@@ -157,7 +158,7 @@ __global__ void DetectionForwardKernel(DType *out, const DType *cls_prob,
   int ntop = size;
   if (nms_topk > 0 && nms_topk < ntop) {
     ntop = nms_topk;
-    for (int i = ntop + index; i < size; i += blockDim.x) {
+    for (int i = ntop + index; i < size; i += hipBlockDim_x) {
       out[i * 6] = -1;
     }
     __syncthreads();
@@ -168,7 +169,7 @@ __global__ void DetectionForwardKernel(DType *out, const DType *cls_prob,
     DType compare_id = out[compare_pos * 6];
     if (compare_id < 0) continue;  // not a valid positive detection, skip
     DType *compare_loc_ptr = out + compare_pos * 6 + 2;
-    for (int i = compare_pos + index + 1; i < ntop; i += blockDim.x) {
+    for (int i = compare_pos + index + 1; i < ntop; i += hipBlockDim_x) {
       DType class_id = out[i * 6];
       if (class_id < 0) continue;
       if (force_suppress || (class_id == compare_id)) {
@@ -203,13 +204,13 @@ inline void MultiBoxDetectionForward(const Tensor<gpu, 3, DType> &out,
   const int num_threads = cuda::kMaxThreadsPerBlock;
   int num_blocks = num_batches;
   cuda::CheckLaunchParam(num_blocks, num_threads, "MultiBoxDetection Forward");
-  cudaStream_t stream = Stream<gpu>::GetStream(out.stream_);
+  hipStream_t stream = Stream<gpu>::GetStream(out.stream_);
   cuda::DetectionForwardKernel<<<num_blocks, num_threads, 0, stream>>>(out.dptr_,
     cls_prob.dptr_, loc_pred.dptr_, anchors.dptr_, temp_space.dptr_,
     num_classes, num_anchors, threshold, clip,
     variances[0], variances[1], variances[2], variances[3],
     nms_threshold, force_suppress, nms_topk);
-  MULTIBOX_DETECTION_CUDA_CHECK(cudaPeekAtLastError());
+  MULTIBOX_DETECTION_CUDA_CHECK(hipPeekAtLastError());
 }
 }  // namespace mshadow
 

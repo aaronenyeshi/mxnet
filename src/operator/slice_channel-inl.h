@@ -32,15 +32,13 @@ struct SliceChannelParam : public dmlc::Parameter<SliceChannelParam> {
   bool squeeze_axis;
   DMLC_DECLARE_PARAMETER(SliceChannelParam) {
     DMLC_DECLARE_FIELD(num_outputs).set_lower_bound(1)
-    .describe("Number of splits. Note that this should evenly divide the length of the `axis`.");
+    .describe("Number of outputs to be sliced.");
     DMLC_DECLARE_FIELD(axis).set_default(1)
-    .describe("Axis along which to split.");
+    .describe("Dimension along which to slice.");
     DMLC_DECLARE_FIELD(squeeze_axis).set_default(0)
-    .describe("If true, Removes the axis with length 1 from the shapes of the output arrays."
-              " **Note** that setting `squeeze_axis` to ``true`` removes axis with length 1"
-              " only along the `axis` which it is split."
-              " Also `squeeze_axis` can be set to ``true``"
-              " only if ``input.shape[axis] == num_outputs``.");
+    .describe("If true, the dimension will be squeezed."
+              " Also, input.shape[axis] must be the same as `num_outputs`"
+              " when squeeze_axis is turned on.");
   }
 };  // struct SliceChannelParam
 

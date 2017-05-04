@@ -44,11 +44,11 @@ class GPUPooledStorageManager final : public StorageManager {
   void Free(void* ptr, size_t raw_size) override;
 
   void DirectFree(void* ptr, size_t raw_size) override {
-    cudaError_t err = cudaFree(ptr);
+    hipError_t err = hipFree(ptr);
     size_t size = raw_size + NDEV;
     // ignore unloading error, as memory has already been recycled
-    if (err != cudaSuccess && err != cudaErrorCudartUnloading) {
-      LOG(FATAL) << "CUDA: " << cudaGetErrorString(err);
+    if (err != hipSuccess && err != hipErrorCudartUnloading) {
+      LOG(FATAL) << "CUDA: " << hipGetErrorString(err);
     }
     used_memory_ -= size;
   }
@@ -74,14 +74,14 @@ void* GPUPooledStorageManager::Alloc(size_t raw_size) {
   auto&& reuse_it = memory_pool_.find(size);
   if (reuse_it == memory_pool_.end() || reuse_it->second.size() == 0) {
     size_t free, total;
-    cudaMemGetInfo(&free, &total);
+    hipMemGetInfo(&free, &total);
     if (free <= total * reserve_ / 100 || size > free - total * reserve_ / 100)
       ReleaseAll();
 
     void* ret = nullptr;
-    cudaError_t e = cudaMalloc(&ret, size);
-    if (e != cudaSuccess && e != cudaErrorCudartUnloading) {
-      LOG(FATAL) << "cudaMalloc failed: " << cudaGetErrorString(e);
+    hipError_t e = hipMalloc(&ret, size);
+    if (e != hipSuccess && e != hipErrorCudartUnloading) {
+      LOG(FATAL) << "cudaMalloc failed: " << hipGetErrorString(e);
     }
     used_memory_ += size;
     return ret;

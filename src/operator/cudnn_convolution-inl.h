@@ -209,7 +209,7 @@ class CuDNNConvolutionOp : public Operator {
       typename DataType<DType>::ScaleType alpha = 1.0f;
       typename DataType<DType>::ScaleType beta = 0.0f;
       typename DataType<DType>::ScaleType beta_add = 1.0f;
-      if (!param_.no_bias && (req[conv::kBias] != kNullOp)) {
+      if (!param_.no_bias) {
         Tensor<gpu, 1, DType> gbias = in_grad[conv::kBias].get<gpu, 1, DType>(s);
         CUDNN_CALL(cudnnConvolutionBackwardBias(s->dnn_handle_,
                                               &alpha,
@@ -219,9 +219,8 @@ class CuDNNConvolutionOp : public Operator {
                                               bias_desc_,
                                               gbias.dptr_ + bias_offset_ * g));
       }
-      if (req[conv::kWeight] != kNullOp) {
-        #if CUDNN_MAJOR <= 4
-          CUDNN_CALL(cudnnConvolutionBackwardFilter_v3(s->dnn_handle_,
+      #if CUDNN_MAJOR <= 4
+      CUDNN_CALL(cudnnConvolutionBackwardFilter_v3(s->dnn_handle_,
                &alpha,
                in_desc_,
                data_ptr + data_offset_ * g,
@@ -234,8 +233,8 @@ class CuDNNConvolutionOp : public Operator {
                req[conv::kWeight] == kAddTo? &beta_add : &beta,
                filter_desc_,
                gwmat_ptr + weight_offset_ * g));
-        #elif CUDNN_MAJOR >= 5
-          CUDNN_CALL(cudnnConvolutionBackwardFilter(s->dnn_handle_,
+      #elif CUDNN_MAJOR >= 5
+      CUDNN_CALL(cudnnConvolutionBackwardFilter(s->dnn_handle_,
                &alpha,
                in_desc_,
                data_ptr + data_offset_ * g,
@@ -248,11 +247,9 @@ class CuDNNConvolutionOp : public Operator {
                req[conv::kWeight] == kAddTo? &beta_add : &beta,
                filter_desc_,
                gwmat_ptr + weight_offset_ * g));
-        #endif
-      }
-      if (req[conv::kData] != kNullOp) {
-        #if CUDNN_MAJOR <= 4
-          CUDNN_CALL(cudnnConvolutionBackwardData_v3(s->dnn_handle_,
+      #endif
+      #if CUDNN_MAJOR <= 4
+      CUDNN_CALL(cudnnConvolutionBackwardData_v3(s->dnn_handle_,
                &alpha,
                filter_desc_,
                wmat_ptr + weight_offset_ * g,
@@ -265,8 +262,8 @@ class CuDNNConvolutionOp : public Operator {
                req[conv::kData] == kAddTo? &beta_add : &beta,
                in_desc_,
                gdata_ptr + data_offset_ * g));
-        #elif CUDNN_MAJOR >= 5
-          CUDNN_CALL(cudnnConvolutionBackwardData(s->dnn_handle_,
+      #elif CUDNN_MAJOR >= 5
+      CUDNN_CALL(cudnnConvolutionBackwardData(s->dnn_handle_,
                &alpha,
                filter_desc_,
                wmat_ptr + weight_offset_ * g,
@@ -279,8 +276,7 @@ class CuDNNConvolutionOp : public Operator {
                req[conv::kData] == kAddTo? &beta_add : &beta,
                in_desc_,
                gdata_ptr + data_offset_ * g));
-        #endif
-      }
+      #endif
     }
   }
 

@@ -349,7 +349,6 @@ void ThreadedEngine::WaitForAll() {
 }
 
 inline void ThreadedEngine::OnComplete(ThreadedOpr* threaded_opr) {
-  bool is_temporary_opr = threaded_opr->temporary;
   // Mark complete for read variables
   for (auto&& i : threaded_opr->const_vars) {
     i->CompleteReadDependency([this](OprBlock* opr) {
@@ -377,10 +376,6 @@ inline void ThreadedEngine::OnComplete(ThreadedOpr* threaded_opr) {
       ThreadedVar::Delete(i);
     }
   }
-  // The function been pushed from `ThreadedEngine::DeleteOperator`
-  // could execute right after we mark all vars as complete, so if
-  // threaded_opr is not temporary, its value is not reliable
-  // anymore start from here.
   int npending;
   {
     std::unique_lock<std::mutex> lock{finished_m_};
@@ -393,7 +388,7 @@ inline void ThreadedEngine::OnComplete(ThreadedOpr* threaded_opr) {
   }
 
   // delte operator if it is temperory
-  if (is_temporary_opr) {
+  if (threaded_opr->temporary) {
     ThreadedOpr::Delete(threaded_opr);
   }
 }
