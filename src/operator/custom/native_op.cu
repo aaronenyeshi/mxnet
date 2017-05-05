@@ -4,7 +4,7 @@
  * \brief
  * \author Junyuan Xie
 */
-//#include "./native_op-inl.h"
+#include "./native_op-inl.h"
 namespace mxnet {
 namespace op {
 template<>

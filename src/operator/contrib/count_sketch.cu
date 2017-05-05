@@ -1,4 +1,3 @@
-#include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2015 by Contributors
  * \file count_sketch.cu
@@ -46,12 +45,12 @@ __device__ void atomic_add(double* address, double val) {
 }
 
 template <typename DType>
-__global__ void sketch_forward_kernel(hipLaunchParm lp,const int nthreads, DType *out, const DType *h,
+__global__ void sketch_forward_kernel(const int nthreads, DType *out, const DType *h,
                     const DType *s, const DType *in, const int n_smaples,
                     const int in_dim, const int out_dim) {
   // input: n_smaples * in_dim
   // output: n_smaples * out_dim
-  const int index = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
+  const int index = blockIdx.x * blockDim.x + threadIdx.x;
   if (index >= nthreads) {
     return;
   }
@@ -66,12 +65,12 @@ __global__ void sketch_forward_kernel(hipLaunchParm lp,const int nthreads, DType
 }
 
 template <typename DType>
-__global__ void sketch_backward_kernel(hipLaunchParm lp,const int nthreads, DType *in_grad, const DType *h,
+__global__ void sketch_backward_kernel(const int nthreads, DType *in_grad, const DType *h,
                     const DType *s, const DType *out_grad, const int n_smaples,
                     const int in_dim, const int out_dim) {
   // only calculate gradient regarding x
   // can also calculate gradient regarding s if needed
-  const int index = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
+  const int index = blockIdx.x * blockDim.x + threadIdx.x;
   const int i_indim = index % in_dim;
   const int i_sample = index / in_dim;
   const int i_outdim = i_sample*out_dim + h[i_indim];

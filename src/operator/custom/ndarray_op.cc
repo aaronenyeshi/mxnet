@@ -24,7 +24,7 @@ Operator *CreateOp<cpu>(NDArrayOpParam param) {
 template<>
 Context NDArrayOp<gpu>::get_ctx() {
   int dev_id;
-  CHECK_EQ(hipGetDevice(&dev_id), hipSuccess);
+  CHECK_EQ(cudaGetDevice(&dev_id), cudaSuccess);
   return Context::GPU(dev_id);
 }
 

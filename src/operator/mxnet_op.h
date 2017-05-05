@@ -1,4 +1,3 @@
-#include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2017 by Contributors
  * \file mxnet_op.h
@@ -193,8 +192,8 @@ struct Kernel<OP, cpu> {
 
 #ifdef __CUDACC__
 template<typename OP, typename ...Args>
-__global__ void mxnet_generic_kernel(hipLaunchParm lp,int N, Args... args) {
-  for (int i = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; i < N; i += hipBlockDim_x * hipGridDim_x) {
+__global__ void mxnet_generic_kernel(int N, Args... args) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < N; i += blockDim.x * gridDim.x) {
     OP::Map(i, args...);
   }
 }

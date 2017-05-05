@@ -37,8 +37,8 @@ class GPUDeviceStorage {
 inline void* GPUDeviceStorage::Alloc(size_t size) {
   void* ret = nullptr;
 #if MXNET_USE_CUDA
-  hipError_t e = hipMalloc(&ret, size);
-  if (e != hipSuccess && e != hipErrorCudartUnloading)
+  cudaError_t e = cudaMalloc(&ret, size);
+  if (e != cudaSuccess && e != cudaErrorCudartUnloading)
     throw std::bad_alloc();
 #else   // MXNET_USE_CUDA
   LOG(FATAL) << "Please compile with CUDA enabled";
@@ -49,10 +49,10 @@ inline void* GPUDeviceStorage::Alloc(size_t size) {
 inline void GPUDeviceStorage::Free(void* ptr) {
 #if MXNET_USE_CUDA
   // throw special exception for caller to catch.
-  hipError_t err = hipFree(ptr);
+  cudaError_t err = cudaFree(ptr);
   // ignore unloading error, as memory has already been recycled
-  if (err != hipSuccess && err != hipErrorCudartUnloading) {
-    LOG(FATAL) << "CUDA: " << hipGetErrorString(err);
+  if (err != cudaSuccess && err != cudaErrorCudartUnloading) {
+    LOG(FATAL) << "CUDA: " << cudaGetErrorString(err);
   }
 #else   // MXNET_USE_CUDA
   LOG(FATAL) << "Please compile with CUDA enabled";

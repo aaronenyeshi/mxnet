@@ -1,4 +1,3 @@
-#include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2016 by Contributors
  * \file multibox_prior.cu
@@ -12,20 +11,20 @@
 #define MULTIBOXPRIOR_CUDA_CHECK(condition) \
   /* Code block avoids redefinition of cudaError_t error */ \
   do { \
-    hipError_t error = condition; \
-    CHECK_EQ(error, hipSuccess) << " " << hipGetErrorString(error); \
+    cudaError_t error = condition; \
+    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
   } while (0)
 
 namespace mshadow {
 namespace cuda {
 template<typename DType>
-__global__ void AssignPriors(hipLaunchParm lp,DType *out, const float size,
+__global__ void AssignPriors(DType *out, const float size,
                              const float sqrt_ratio, const int in_width,
                              const int in_height, const float step_x,
                              const float step_y, const float center_offy,
                              const float center_offx, const int stride,
                              const int offset) {
-  int index = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
   if (index >= in_width * in_height) return;
   int r = index / in_width;
   int c = index % in_width;
@@ -49,7 +48,7 @@ inline void MultiBoxPriorForward(const Tensor<gpu, 2, DType> &out,
                             const std::vector<float> &steps,
                             const std::vector<float> &offsets) {
   CHECK_EQ(out.CheckContiguous(), true);
-  hipStream_t stream = Stream<gpu>::GetStream(out.stream_);
+  cudaStream_t stream = Stream<gpu>::GetStream(out.stream_);
   DType *out_ptr = out.dptr_;
   const float step_x = steps[1];
   const float step_y = steps[0];
@@ -71,7 +70,7 @@ inline void MultiBoxPriorForward(const Tensor<gpu, 2, DType> &out,
       sizes[i], 1.f, in_width, in_height, step_x, step_y, offset_y, offset_x, stride, offset);
     ++offset;
   }
-  MULTIBOXPRIOR_CUDA_CHECK(hipPeekAtLastError());
+  MULTIBOXPRIOR_CUDA_CHECK(cudaPeekAtLastError());
 
   // size = sizes[0], various ratios
   for (int j = 1; j < num_ratios; ++j) {
@@ -80,7 +79,7 @@ inline void MultiBoxPriorForward(const Tensor<gpu, 2, DType> &out,
        offset_y, offset_x, stride, offset);
     ++offset;
   }
-  MULTIBOXPRIOR_CUDA_CHECK(hipPeekAtLastError());
+  MULTIBOXPRIOR_CUDA_CHECK(cudaPeekAtLastError());
 }
 }  // namespace mshadow
 

@@ -26,7 +26,7 @@ Operator *CreateOp<cpu>(MXCallbackList *op_info) {
 template<>
 Context CustomOp<gpu>::get_ctx() {
   int dev_id;
-  CHECK_EQ(hipGetDevice(&dev_id), hipSuccess);
+  CHECK_EQ(cudaGetDevice(&dev_id), cudaSuccess);
   return Context::GPU(dev_id);
 }
 

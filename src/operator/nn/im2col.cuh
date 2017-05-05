@@ -76,7 +76,7 @@ namespace op {
  * DO NOT call this directly. Use wrapper function im2col() instead;
  */
 template <typename DType>
-__global__ void im2col_gpu_kernel(hipLaunchParm lp,const int n, const DType* data_im,
+__global__ void im2col_gpu_kernel(const int n, const DType* data_im,
     const int height, const int width, const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w,
     const int stride_h, const int stride_w,
@@ -141,7 +141,7 @@ inline void im2col_gpu(mshadow::Stream<gpu>* s,
  * \brief DO NOT call this directly. Use wrapper function col2im() instead;
  */
 template <typename DType>
-__global__ void col2im_gpu_kernel(hipLaunchParm lp,const int n, const DType* data_col,
+__global__ void col2im_gpu_kernel(const int n, const DType* data_col,
     const int channels, const int height, const int width,
     const int kernel_h, const int kernel_w,
     const int pad_h, const int pad_w,
@@ -186,7 +186,7 @@ __global__ void col2im_gpu_kernel(hipLaunchParm lp,const int n, const DType* dat
  */
 using mshadow::Shape;
 template <typename DType, int num_axes>
-__global__ void im2col_nd_gpu_kernel(hipLaunchParm lp,const int n, const DType* data_im,
+__global__ void im2col_nd_gpu_kernel(const int n, const DType* data_im,
     const Shape<num_axes+2> im_shape, const Shape<num_axes+1> col_shape,
     const Shape<num_axes> kernel_shape, const Shape<num_axes> pad, const Shape<num_axes> stride,
     const Shape<num_axes> dilation, DType* data_col) {
@@ -200,15 +200,15 @@ __global__ void im2col_nd_gpu_kernel(hipLaunchParm lp,const int n, const DType* 
   __shared__ int shared_col_shape[num_axes + 1];
   __shared__ int shared_im_shape[num_axes + 1];
 
-  if (hipThreadIdx_x < num_axes) {
-    shared_dilation[hipThreadIdx_x] = dilation[hipThreadIdx_x];
-    shared_kernel_shape[hipThreadIdx_x] = kernel_shape[hipThreadIdx_x];
-    shared_pad[hipThreadIdx_x] = pad[hipThreadIdx_x];
-    shared_stride[hipThreadIdx_x] = stride[hipThreadIdx_x];
+  if (threadIdx.x < num_axes) {
+    shared_dilation[threadIdx.x] = dilation[threadIdx.x];
+    shared_kernel_shape[threadIdx.x] = kernel_shape[threadIdx.x];
+    shared_pad[threadIdx.x] = pad[threadIdx.x];
+    shared_stride[threadIdx.x] = stride[threadIdx.x];
   }
-  if (hipThreadIdx_x < num_axes + 1) {
-    shared_col_shape[hipThreadIdx_x] = col_shape[hipThreadIdx_x];
-    shared_im_shape[hipThreadIdx_x] = im_shape[hipThreadIdx_x+1];  // skip batch dim
+  if (threadIdx.x < num_axes + 1) {
+    shared_col_shape[threadIdx.x] = col_shape[threadIdx.x];
+    shared_im_shape[threadIdx.x] = im_shape[threadIdx.x+1];  // skip batch dim
   }
   __syncthreads();
 
@@ -351,7 +351,7 @@ inline void col2im_gpu(mshadow::Stream<gpu>* s, const DType* data_col, const int
  * \brief DO NOT call this directly. Use wrapper function col2im() instead;
  */
 template <typename DType, int num_axes>
-__global__ void col2im_nd_gpu_kernel(hipLaunchParm lp,const int n, const DType* data_col,
+__global__ void col2im_nd_gpu_kernel(const int n, const DType* data_col,
     const Shape<num_axes+2> im_shape, const Shape<num_axes+1> col_shape,
     const Shape<num_axes> kernel_shape, const Shape<num_axes> pad, const Shape<num_axes> stride,
     const Shape<num_axes> dilation, DType* data_im, OpReqType req) {
@@ -367,15 +367,15 @@ __global__ void col2im_nd_gpu_kernel(hipLaunchParm lp,const int n, const DType* 
   __shared__ int shared_col_shape[num_axes + 1];
   __shared__ int shared_im_shape[num_axes + 1];
 
-  if (hipThreadIdx_x < num_axes) {
-    shared_dilation[hipThreadIdx_x] = dilation[hipThreadIdx_x];
-    shared_kernel_shape[hipThreadIdx_x] = kernel_shape[hipThreadIdx_x];
-    shared_pad[hipThreadIdx_x] = pad[hipThreadIdx_x];
-    shared_stride[hipThreadIdx_x] = stride[hipThreadIdx_x];
+  if (threadIdx.x < num_axes) {
+    shared_dilation[threadIdx.x] = dilation[threadIdx.x];
+    shared_kernel_shape[threadIdx.x] = kernel_shape[threadIdx.x];
+    shared_pad[threadIdx.x] = pad[threadIdx.x];
+    shared_stride[threadIdx.x] = stride[threadIdx.x];
   }
-  if (hipThreadIdx_x < num_axes + 1) {
-    shared_col_shape[hipThreadIdx_x] = col_shape[hipThreadIdx_x];
-    shared_im_shape[hipThreadIdx_x] = im_shape[hipThreadIdx_x+1];  // skip batch dim
+  if (threadIdx.x < num_axes + 1) {
+    shared_col_shape[threadIdx.x] = col_shape[threadIdx.x];
+    shared_im_shape[threadIdx.x] = im_shape[threadIdx.x+1];  // skip batch dim
   }
   __syncthreads();
 
