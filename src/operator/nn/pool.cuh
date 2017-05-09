@@ -72,7 +72,7 @@ namespace op {
  * Do not call this kernel directly. Use the interface pool().
  */
 template <typename DType>
-__global__ void pool_max_1d_gpu_kernel(const int nthreads, const DType* in_data,
+__global__ void pool_max_1d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* in_data,
                                        const int channels, const int width,
                                        const int pooled_width, const int kernel_w,
                                        const int stride_w, const int pad_w,
@@ -104,7 +104,7 @@ __global__ void pool_max_1d_gpu_kernel(const int nthreads, const DType* in_data,
  * Do not call this kernel directly. Use the interface pool().
  */
 template <typename DType>
-__global__ void pool_max_2d_gpu_kernel(const int nthreads, const DType* in_data,
+__global__ void pool_max_2d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* in_data,
                                        const int channels, const int height, const int width,
                                        const int pooled_height, const int pooled_width,
                                        const int kernel_h, const int kernel_w, const int stride_h,
@@ -143,7 +143,7 @@ __global__ void pool_max_2d_gpu_kernel(const int nthreads, const DType* in_data,
  * Do not call this kernel directly. Use the interface pool().
  */
 template <typename DType>
-__global__ void pool_max_3d_gpu_kernel(const int nthreads, const DType* in_data, const int channels,
+__global__ void pool_max_3d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* in_data, const int channels,
                                        const int depth, const int height, const int width,
                                        const int pooled_depth, const int pooled_height,
                                        const int pooled_width, const int kernel_d,
@@ -190,7 +190,7 @@ __global__ void pool_max_3d_gpu_kernel(const int nthreads, const DType* in_data,
  * Do not call this kernel directly. Use the interface pool().
  */
 template <typename DType>
-__global__ void pool_sum_1d_gpu_kernel(const int nthreads, const DType* in_data, const int channels,
+__global__ void pool_sum_1d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* in_data, const int channels,
                                        const int width, const int pooled_width, const int kernel_w,
                                        const int stride_w, const int pad_w,
                                        DType* out_data, bool getAvg = false) {
@@ -218,7 +218,7 @@ __global__ void pool_sum_1d_gpu_kernel(const int nthreads, const DType* in_data,
  * Do not call this kernel directly. Use the interface pool().
  */
 template <typename DType>
-__global__ void pool_sum_2d_gpu_kernel(const int nthreads, const DType* in_data, const int channels,
+__global__ void pool_sum_2d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* in_data, const int channels,
                                        const int height, const int width,
                                        const int pooled_height, const int pooled_width,
                                        const int kernel_h, const int kernel_w,
@@ -256,7 +256,7 @@ __global__ void pool_sum_2d_gpu_kernel(const int nthreads, const DType* in_data,
  * Do not call this kernel directly. Use the interface pool().
  */
 template <typename DType>
-__global__ void pool_sum_3d_gpu_kernel(const int nthreads, const DType* in_data, const int channels,
+__global__ void pool_sum_3d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* in_data, const int channels,
                                        const int depth, const int height, const int width,
                                        const int pooled_depth, const int pooled_height,
                                        const int pooled_width, const int kernel_d,
@@ -302,7 +302,7 @@ __global__ void pool_sum_3d_gpu_kernel(const int nthreads, const DType* in_data,
  * Do not call this kernel directly. Use the interface unpool().
  */
 template <typename DType>
-__global__ void unpool_max_1d_gpu_kernel(const int nthreads, const DType* out_grad,
+__global__ void unpool_max_1d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* out_grad,
                                          const DType* in_data, const DType* out_data,
                                          const int channels, const int width,
                                          const int pooled_width, const int kernel_w,
@@ -345,7 +345,7 @@ __global__ void unpool_max_1d_gpu_kernel(const int nthreads, const DType* out_gr
  * Do not call this kernel directly. Use the interface unpool().
  */
 template <typename DType>
-__global__ void unpool_max_2d_gpu_kernel(const int nthreads, const DType* out_grad,
+__global__ void unpool_max_2d_gpu_kernel(hipLaunchParm lp, const int nthreads, const DType* out_grad,
                                          const DType* in_data, const DType* out_data,
                                          const int channels, const int height, const int width,
                                          const int pooled_height, const int pooled_width,
@@ -400,7 +400,7 @@ __global__ void unpool_max_2d_gpu_kernel(const int nthreads, const DType* out_gr
  * Do not call this kernel directly. Use the interface unpool().
  */
 template <typename DType>
-__global__ void unpool_max_3d_gpu_kernel(const int nthreads, const DType* out_grad,
+__global__ void unpool_max_3d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* out_grad,
                                          const DType* in_data, const DType* out_data,
                                          const int channels, const int depth, const int height,
                                          const int width, const int pooled_depth,
@@ -464,7 +464,7 @@ __global__ void unpool_max_3d_gpu_kernel(const int nthreads, const DType* out_gr
  * Do not call this kernel directly. Use the interface unpool().
  */
 template<typename DType>
-__global__ void unpool_sum_1d_gpu_kernel(const int nthreads, const DType* out_grad,
+__global__ void unpool_sum_1d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* out_grad,
                                          const int channels, const int width,
                                          const int pooled_width, const int kernel_w,
                                          const int stride_w, const int pad_w,
@@ -499,7 +499,7 @@ __global__ void unpool_sum_1d_gpu_kernel(const int nthreads, const DType* out_gr
  * Do not call this kernel directly. Use the interface unpool().
  */
 template<typename DType>
-__global__ void unpool_sum_2d_gpu_kernel(const int nthreads, const DType* out_grad,
+__global__ void unpool_sum_2d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* out_grad,
                                          const int channels, const int height, const int width,
                                          const int pooled_height, const int pooled_width,
                                          const int kernel_h, const int kernel_w,
@@ -543,7 +543,7 @@ __global__ void unpool_sum_2d_gpu_kernel(const int nthreads, const DType* out_gr
  * Do not call this kernel directly. Use the interface unpool().
  */
 template<typename DType>
-__global__ void unpool_sum_3d_gpu_kernel(const int nthreads, const DType* out_grad,
+__global__ void unpool_sum_3d_gpu_kernel(hipLaunchParm lp,const int nthreads, const DType* out_grad,
                                          const int channels, const int depth, const int height,
                                          const int width, const int pooled_depth,
                                          const int pooled_height, const int pooled_width,

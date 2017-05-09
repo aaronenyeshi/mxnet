@@ -97,8 +97,8 @@ inline const char* CurandGetErrorString(curandStatus_t status) {
  */
 #define CHECK_CUDA_ERROR(msg)                                                \
   {                                                                          \
-    cudaError_t e = cudaGetLastError();                                      \
-    CHECK_EQ(e, cudaSuccess) << (msg) << " CUDA: " << cudaGetErrorString(e); \
+    hipError_t e = hipGetLastError();                                      \
+    CHECK_EQ(e, hipSuccess) << (msg) << " CUDA: " << hipGetErrorString(e); \
   }
 
 /*!
@@ -109,9 +109,9 @@ inline const char* CurandGetErrorString(curandStatus_t status) {
  */
 #define CUDA_CALL(func)                                            \
   {                                                                \
-    cudaError_t e = (func);                                        \
-    CHECK(e == cudaSuccess || e == cudaErrorCudartUnloading)       \
-        << "CUDA: " << cudaGetErrorString(e);                      \
+    hipError_t e = (func);                                        \
+    CHECK(e == hipSuccess || e == cudaErrorCudartUnloading)       \
+        << "CUDA: " << hipGetErrorString(e);                      \
   }
 
 /*!
