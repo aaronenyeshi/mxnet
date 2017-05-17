@@ -28,8 +28,8 @@ class CuDNNSpatialTransformerOp : public Operator {
   ~CuDNNSpatialTransformerOp() {
     if (init_cudnn_) {
       CUDNN_CALL(cudnnDestroySpatialTransformerDescriptor(st_desc_));
-      CUDNN_CALL(cudnnDestroyTensorDescriptor(in_desc_));
-      CUDNN_CALL(cudnnDestroyTensorDescriptor(out_desc_));
+      CUDNN_CALL(miopenDestroyTensorDescriptor(in_desc_));
+      CUDNN_CALL(miopenDestroyTensorDescriptor(out_desc_));
     }
   }
 
@@ -136,17 +136,15 @@ class CuDNNSpatialTransformerOp : public Operator {
       Tensor<gpu, 4, DType> data = in_data[st::kData].get<gpu, 4, DType>(s);
       Tensor<gpu, 4, DType> out = out_data[st::kOut].get<gpu, 4, DType>(s);
       CUDNN_CALL(cudnnCreateSpatialTransformerDescriptor(&st_desc_));
-      CUDNN_CALL(cudnnCreateTensorDescriptor(&in_desc_));
-      CUDNN_CALL(cudnnCreateTensorDescriptor(&out_desc_));
-      CUDNN_CALL(cudnnSetTensor4dDescriptor(in_desc_,
-                                            format_,
+      CUDNN_CALL(miopenCreateTensorDescriptor(&in_desc_));
+      CUDNN_CALL(miopenCreateTensorDescriptor(&out_desc_));
+      CUDNN_CALL(miopenSet4dTensorDescriptor(in_desc_,
                                             dtype_,
                                             data.size(0),
                                             data.size(1),
                                             data.size(2),
                                             data.size(3)));
-      CUDNN_CALL(cudnnSetTensor4dDescriptor(out_desc_,
-                                            format_,
+      CUDNN_CALL(miopenSet4dTensorDescriptor(out_desc_,
                                             dtype_,
                                             out.size(0),
                                             out.size(1),
@@ -165,10 +163,10 @@ class CuDNNSpatialTransformerOp : public Operator {
   }
 
   bool init_cudnn_;
-  cudnnDataType_t dtype_;
+  miopenDataType_t dtype_;
   cudnnSpatialTransformerDescriptor_t st_desc_;
-  cudnnTensorDescriptor_t in_desc_;
-  cudnnTensorDescriptor_t out_desc_;
+  miopenTensorDescriptor_t in_desc_;
+  miopenTensorDescriptor_t out_desc_;
   cudnnSamplerType_t sampler_;
   #if CUDNN_MAJOR >= 5
   cudnnTensorFormat_t format_;

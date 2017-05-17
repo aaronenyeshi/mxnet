@@ -148,7 +148,7 @@ inline const char* CurandGetErrorString(curandStatus_t status) {
 
 #define CUDNN_CALL(func)                                                      \
   {                                                                           \
-    cudnnStatus_t e = (func);                                                 \
+    miopenStatus_t  e = (func);                                                 \
     CHECK_EQ(e, CUDNN_STATUS_SUCCESS) << "cuDNN: " << cudnnGetErrorString(e); \
   }
 

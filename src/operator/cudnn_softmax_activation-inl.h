@@ -23,7 +23,7 @@ class CuDNNSoftmaxActivationOp : public Operator {
 
   ~CuDNNSoftmaxActivationOp() {
     if (init_cudnn_) {
-      CUDNN_CALL(cudnnDestroyTensorDescriptor(shape_desc_));
+      CUDNN_CALL(miopenDestroyTensorDescriptor(shape_desc_));
     }
   }
 
@@ -71,16 +71,15 @@ class CuDNNSoftmaxActivationOp : public Operator {
     CHECK_EQ(s->dnn_handle_ownership_, mshadow::Stream<gpu>::OwnHandle);
     if (!init_cudnn_) {
       init_cudnn_ = true;
-      CUDNN_CALL(cudnnCreateTensorDescriptor(&shape_desc_));
-      CUDNN_CALL(cudnnSetTensor4dDescriptor(shape_desc_,
-                                            CUDNN_TENSOR_NCHW,
+      CUDNN_CALL(miopenCreateTensorDescriptor(&shape_desc_));
+      CUDNN_CALL(miopenSet4dTensorDescriptor(shape_desc_,
                                             dtype_,
                                             data.shape_[0],
                                             data.shape_[1],
                                             data.shape_[2],
                                             data.shape_[3]));
     }
-    CUDNN_CALL(cudnnSoftmaxForward(s->dnn_handle_,
+    CUDNN_CALL(miopenSoftmaxForward(s->dnn_handle_,
                                    CUDNN_SOFTMAX_ACCURATE,
                                    softmax_mode,
                                    &alpha,
@@ -141,7 +140,7 @@ class CuDNNSoftmaxActivationOp : public Operator {
       softmax_mode = CUDNN_SOFTMAX_MODE_CHANNEL;
     }
     CHECK_EQ(s->dnn_handle_ownership_, mshadow::Stream<gpu>::OwnHandle);
-    CUDNN_CALL(cudnnSoftmaxBackward(s->dnn_handle_,
+    CUDNN_CALL(miopenSoftmaxBackward(s->dnn_handle_,
                                     CUDNN_SOFTMAX_ACCURATE,
                                     softmax_mode,
                                     &alpha,
@@ -156,8 +155,8 @@ class CuDNNSoftmaxActivationOp : public Operator {
 
  private:
   bool init_cudnn_;
-  cudnnDataType_t dtype_;
-  cudnnTensorDescriptor_t shape_desc_;
+  miopenDataType_t dtype_;
+  miopenTensorDescriptor_t  shape_desc_;
   SoftmaxActivationParam param_;
 };  // class CuDNNSoftmaxActivationOp
 }  // namespace op
