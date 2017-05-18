@@ -194,11 +194,11 @@ class CuDNNActivationOp : public Operator {
  private:
   bool init_cudnn_;
   miopenDataType_t dtype_;
-  cudnnActivationMode_t mode_;
+  miopenActivationMode_t mode_;
   miopenTensorDescriptor_t shape_desc_;
   ActivationParam param_;
 #if CUDNN_MAJOR >= 5
-  cudnnActivationDescriptor_t desc_;
+  miopenActivationDescriptor_t desc_;
   cudnnNanPropagation_t nan_prop_;
   double relu_ceil_;
 #endif

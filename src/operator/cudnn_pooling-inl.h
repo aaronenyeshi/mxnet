@@ -278,10 +278,10 @@ class CuDNNPoolingOp : public Operator {
   bool init_cudnn_;
   miopenDataType_t dtype_;
   miopenHandle_t handle_;
-  cudnnPoolingMode_t mode_;
+  miopenPoolingMode_t mode_;
   miopenTensorDescriptor_t  in_desc_;
   miopenTensorDescriptor_t  out_desc_;
-  cudnnPoolingDescriptor_t pooling_desc_;
+  miopenPoolingDescriptor_t pooling_desc_;
   #if CUDNN_MAJOR >= 5
   cudnnNanPropagation_t nan_prop_;
   #endif

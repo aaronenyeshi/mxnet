@@ -128,7 +128,7 @@ class CuDNNLocalResponseNormOp : public Operator {
   bool init_cudnn_;
   LRNParam param_;
   miopenDataType_t dtype_;
-  cudnnLRNDescriptor_t lrn_desc_;
+  miopenLRNDescriptor_t lrn_desc_;
   miopenTensorDescriptor_t shape_desc_;
 };  // class CuDNNLocalResponseNormOp
 }  // namespace op
