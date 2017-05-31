@@ -10,7 +10,7 @@ if __name__ == '__main__':
     y[:] = 2
     rtc = mx.rtc('abc', [('x', x)], [('y', y)], """
         __shared__ float s_rec[10];
-        s_rec[threadIdx.x] = x[threadIdx.x];
-        y[threadIdx.x] = expf(s_rec[threadIdx.x]*5.0);""")
+        s_rec[hipThreadIdx_x] = x[hipThreadIdx_x];
+        y[hipThreadIdx_x] = expf(s_rec[hipThreadIdx_x]*5.0);""")
     rtc.push([x], [y], (1, 1, 1), (10,1,1))
     assert_allclose(y.asnumpy(), np.exp(x.asnumpy()*5.0))

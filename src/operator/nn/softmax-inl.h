@@ -107,7 +107,7 @@ inline void SoftmaxGrad(Stream<cpu> *s, DType *out, DType *ograd,
 
 #ifdef __CUDACC__
 template<int x_bits, typename OP, typename DType, int ndim>
-__global__ void softmax_compute_kernel(DType *in, DType *out, index_t M, int axis,
+__global__ void softmax_compute_kernel(hipLaunchParm lp,DType *in, DType *out, index_t M, int axis,
                                        Shape<ndim> sshape, Shape<ndim> stride) {
   const unsigned x_size = 1 << x_bits;
   __shared__ DType smem[x_size];
@@ -158,7 +158,7 @@ inline void Softmax(Stream<gpu> *s, DType *in, DType *out,
 
 
 template<int x_bits, typename OP1, typename OP2, typename DType, int ndim>
-__global__ void softmax_gradient_kernel(DType *out, DType *ograd, DType *igrad,
+__global__ void softmax_gradient_kernel(hipLaunchParm lp,DType *out, DType *ograd, DType *igrad,
                                         index_t M, int axis, Shape<ndim> sshape,
                                         Shape<ndim> stride) {
   const unsigned x_size = 1 << x_bits;

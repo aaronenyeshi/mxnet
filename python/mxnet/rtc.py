@@ -24,7 +24,7 @@ class Rtc(object):
         For example, if ``name = "mykernel"`` and
         inputs = [('x', mx.nd.zeros((10,)))]
         outputs = [('y', mx.nd.zeros((10,)))]
-        kernel = "y[threadIdx.x] = x[threadIdx.x];",
+        kernel = "y[hipThreadIdx_x] = x[hipThreadIdx_x];",
         then the compiled kernel will be:
         extern "C" __global__ mykernel(float *x, float *y) {
             const int x_ndim = 1;
@@ -32,7 +32,7 @@ class Rtc(object):
             const int y_ndim = 1;
             const int y_dims = { 10 };
 
-            y[threadIdx.x] = x[threadIdx.x];
+            y[hipThreadIdx_x] = x[hipThreadIdx_x];
         }
     """
     def __init__(self, name, inputs, outputs, kernel):
