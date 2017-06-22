@@ -121,7 +121,7 @@ class CaffeOp : public Operator {
     for (uint32_t i = 0; i < top_.size(); ++i)
       top_[i]->gpu_data();
 
-    CHECK_EQ(cudaStreamSynchronize(NULL), cudaSuccess);
+    CHECK_EQ(hipStreamSynchronize(NULL), hipSuccess);
 #endif  // __CUDACC__
   }
 
@@ -192,7 +192,7 @@ class CaffeOp : public Operator {
     for (uint32_t i = 0; i < bot_.size(); ++i)
       bot_[i]->gpu_diff();
 
-    CHECK_EQ(cudaStreamSynchronize(NULL), cudaSuccess);
+    CHECK_EQ(hipStreamSynchronize(NULL), hipSuccess);
 #endif  // __CUDACC__
   }
 

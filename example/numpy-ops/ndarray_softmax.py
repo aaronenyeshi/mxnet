@@ -28,7 +28,7 @@ class NDArraySoftmax(mx.operator.NDArrayOp):
         y = out_data[0]
         if self.fwd_kernel is None:
             self.fwd_kernel = mx.rtc('softmax', [('x', x)], [('y', y)], """
-int i = threadIdx.x + blockIdx.x*blockDim.x;
+int i = hipThreadIdx_x + hipBlockIdx_x*hipBlockDim_x;
 float max_x = x[i*x_dims[1]];
 for (int j = 1; j < x_dims[1]; ++j) {
     if (max_x < x[i*x_dims[1]+j]) {
@@ -51,8 +51,8 @@ for (int j = 0; j < x_dims[1]; ++j) {
         dx = in_grad[0]
         if self.bwd_kernel is None:
             self.bwd_kernel = mx.rtc('softmax_grad', [('y', y), ('l', l)], [('dx', dx)], """
-int i = blockIdx.x;
-int j = threadIdx.x;
+int i = hipBlockIdx_x;
+int j = hipThreadIdx_x;
 int k = static_cast<int>(l[i]);
 if (j == k) {
     dx[i*dx_dims[1]+j] = y[i*dx_dims[1]+j] - 1.0f;
