@@ -11,7 +11,7 @@ using namespace mshadow::cuda;
 
 template<int ndim, typename DType, typename OP, int unroll>
 __launch_bounds__(kMaxThreadsPerBlock)
-__global__ void binary_broadcast_kernel(hipLaunchParm lp, const int N, const bool addto,
+__global__ void binary_broadcast_kernel(const int N, const bool addto,
                                         const DType* __restrict lhs,
                                         const DType* __restrict rhs, DType *out,
                                         const Shape<ndim> lstride, const Shape<ndim> rstride,
@@ -55,7 +55,7 @@ void BinaryBroadcastComputeImpl(Stream<gpu> *s, const OpReqType req,
 const int nthread_reduce = kMaxThreadsPerBlock;
 template<typename Reducer, int ndim, typename DType, typename OP, int unroll>
 __launch_bounds__(nthread_reduce)
-__global__ void reduce_kernel(hipLaunchParm lp, const int N, const int M, const bool addto,
+__global__ void reduce_kernel(const int N, const int M, const bool addto,
                               const DType* __restrict big, DType *small,
                               const Shape<ndim> big_shape0, const Shape<ndim> small_shape,
                               const Shape<ndim> big_shape, const Shape<ndim> big_stride,
@@ -129,7 +129,7 @@ __global__ void reduce_kernel(hipLaunchParm lp, const int N, const int M, const 
 
 template<typename Reducer, int ndim, typename DType, typename OP1, typename OP2, int unroll>
 __launch_bounds__(nthread_reduce)
-__global__ void reduce_kernel(hipLaunchParm lp, const int N, const int M, const bool addto,
+__global__ void reduce_kernel(const int N, const int M, const bool addto,
                               const DType* __restrict big, const DType* __restrict lhs,
                               const DType* __restrict rhs, DType *small,
                               const Shape<ndim> big_shape0, const Shape<ndim> lhs_shape0,
@@ -214,7 +214,7 @@ __global__ void reduce_kernel(hipLaunchParm lp, const int N, const int M, const 
 // Simple reduction of lines when M is small
 template<typename Reducer, typename DType>
 __launch_bounds__(kMaxThreadsPerBlock)
-__global__ void reduce_lines_kernel(hipLaunchParm lp, const int N, const int M, const bool addto,
+__global__ void reduce_lines_kernel(const int N, const int M, const bool addto,
   const int small_in_stride, const DType* __restrict small_in, DType *small_out) {
   for (int idx = hipThreadIdx_x + hipBlockIdx_x* hipBlockDim_x; idx < N; idx +=  hipBlockDim_x*hipGridDim_x ) {
     
@@ -232,7 +232,7 @@ __global__ void reduce_lines_kernel(hipLaunchParm lp, const int N, const int M, 
 }
 
 template<typename Reducer, int ndim, typename DType, typename OP>
-__global__ void reduce_kernel_M1(hipLaunchParm lp, const int N, const bool addto,
+__global__ void reduce_kernel_M1(const int N, const bool addto,
                                 const DType* __restrict big, DType *small, const Shape<ndim> bshape,
                                 const Shape<ndim> sshape) {
   for (int idx = hipThreadIdx_x + hipBlockIdx_x* hipBlockDim_x; idx < N; idx +=  hipBlockDim_x*hipGridDim_x ) {
@@ -243,7 +243,7 @@ __global__ void reduce_kernel_M1(hipLaunchParm lp, const int N, const bool addto
 }
 
 template<typename Reducer, int ndim, typename DType, typename OP1, typename OP2>
-__global__ void reduce_kernel_M1(hipLaunchParm lp, const int N, const bool addto,
+__global__ void reduce_kernel_M1(const int N, const bool addto,
                                  const DType* __restrict big,
                                  const DType* __restrict lhs,
                                  const DType* __restrict rhs,

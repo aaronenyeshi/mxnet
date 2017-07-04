@@ -26,9 +26,9 @@ using std::isnan;
 
 #ifdef __CUDACC__
 #define CUDA_KERNEL_LOOP(i, n) \
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
+  for (int i = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; \
       i < (n); \
-      i += blockDim.x * gridDim.x)
+      i += hipBlockDim_x * hipGridDim_x)
 
 
 /*!
@@ -193,7 +193,7 @@ struct Kernel<OP, cpu> {
 
 #ifdef __CUDACC__
 template<typename OP, typename ...Args>
-__global__ void mxnet_generic_kernel(hipLaunchParm lp,int N, Args... args) {
+__global__ void mxnet_generic_kernel(int N, Args... args) {
   for (int i = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; i < N; i += hipBlockDim_x * hipGridDim_x) {
     OP::Map(i, args...);
   }

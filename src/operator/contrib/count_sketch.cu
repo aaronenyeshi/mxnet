@@ -16,9 +16,9 @@
 #define THREADS_PER_BLOCK 512
 
 #define CUDA_KERNEL_LOOP(i, n) \
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
+  for (int i = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; \
        i < (n); \
-       i += blockDim.x * gridDim.x)
+       i += hipBlockDim_x * hipGridDim_x)
 namespace mshadow {
 namespace cuda {
 // wrappers to deal with atomic add
@@ -46,7 +46,7 @@ __device__ void atomic_add(double* address, double val) {
 }
 
 template <typename DType>
-__global__ void sketch_forward_kernel(hipLaunchParm lp,const int nthreads, DType *out, const DType *h,
+__global__ void sketch_forward_kernel(const int nthreads, DType *out, const DType *h,
                     const DType *s, const DType *in, const int n_smaples,
                     const int in_dim, const int out_dim) {
   // input: n_smaples * in_dim
@@ -66,7 +66,7 @@ __global__ void sketch_forward_kernel(hipLaunchParm lp,const int nthreads, DType
 }
 
 template <typename DType>
-__global__ void sketch_backward_kernel(hipLaunchParm lp,const int nthreads, DType *in_grad, const DType *h,
+__global__ void sketch_backward_kernel(const int nthreads, DType *in_grad, const DType *h,
                     const DType *s, const DType *out_grad, const int n_smaples,
                     const int in_dim, const int out_dim) {
   // only calculate gradient regarding x

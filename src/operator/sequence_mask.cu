@@ -15,7 +15,7 @@ namespace cuda {
 ////////////////////////////////////////////////////////////////////////////////
 // Cross-Entropy loss
 template<int n_bits, typename DType>
-__global__ void SequenceMaskKernel(hipLaunchParm lpTensor<gpu, 3, DType> dst,
+__global__ void SequenceMaskKernel(Tensor<gpu, 3, DType> dst,
                     const Tensor<gpu, 1, DType> lengths, DType value) {
   const index_t smax = dst.size(0);
   const index_t bmax = lengths.size(1);

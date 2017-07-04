@@ -1,3 +1,4 @@
+#include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2015 by Contributors
  * \file cuda_utils.h
@@ -8,10 +9,8 @@
 
 #include <dmlc/logging.h>
 #include <mshadow/base.h>
-
 #if MXNET_USE_CUDA
-
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #include <cublas_v2.h>
 #include <curand.h>
 
@@ -110,7 +109,7 @@ inline const char* CurandGetErrorString(curandStatus_t status) {
 #define CUDA_CALL(func)                                            \
   {                                                                \
     hipError_t e = (func);                                        \
-    CHECK(e == hipSuccess || e == cudaErrorCudartUnloading)       \
+    CHECK(e == hipSuccess)       \
         << "CUDA: " << hipGetErrorString(e);                      \
   }
 
@@ -144,12 +143,12 @@ inline const char* CurandGetErrorString(curandStatus_t status) {
 
 #if MXNET_USE_CUDNN
 
-#include <cudnn.h>
+#include <miopen/miopen.h>
 
 #define CUDNN_CALL(func)                                                      \
   {                                                                           \
     miopenStatus_t  e = (func);                                                 \
-    CHECK_EQ(e, CUDNN_STATUS_SUCCESS) << "cuDNN: " << cudnnGetErrorString(e); \
+    CHECK_EQ(e, miopenStatusSuccess) << "miopen error code: " << e; \
   }
 
 #endif  // MXNET_USE_CUDNN

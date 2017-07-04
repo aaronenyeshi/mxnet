@@ -9,7 +9,7 @@
 #include "mxnet/base.h"
 #include "../common/cuda_utils.h"
 #if MXNET_USE_CUDA
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 #endif  // MXNET_USE_CUDA
 #include <new>
 

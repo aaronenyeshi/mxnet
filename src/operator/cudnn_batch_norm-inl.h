@@ -35,7 +35,7 @@ class CuDNNBatchNormOp : public Operator {
     dtype_ = DataType<DType>::kCudnnFlag;
     // For float16 input type beta, gamma, mean, and average are stored in float32.
     // For other input types, these parameters have the same type as input
-    dtype_param_ = (dtype_ == CUDNN_DATA_HALF) ? kFloat32 : DataType<DType>::kFlag;
+    dtype_param_ = (dtype_ == miopenHalf) ? kFloat32 : DataType<DType>::kFlag;
   }
 
   ~CuDNNBatchNormOp() {

@@ -19,7 +19,7 @@
 namespace mshadow {
 namespace cuda {
 template<typename DType>
-__global__ void AssignPriors(hipLaunchParm lp,DType *out, const float size,
+__global__ void AssignPriors(DType *out, const float size,
                              const float sqrt_ratio, const int in_width,
                              const int in_height, const float step_x,
                              const float step_y, const float center_offy,

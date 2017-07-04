@@ -42,7 +42,7 @@ namespace cuda {
 // w defines "x" and h defines "y"
 // count should be total anchors numbers, h * w * anchors
 template<typename Dtype>
-__global__ void ProposalGridKernel(hipLaunchParm lp,const int count,
+__global__ void ProposalGridKernel(const int count,
                                    const int num_anchors,
                                    const int height,
                                    const int width,
@@ -70,7 +70,7 @@ __global__ void ProposalGridKernel(hipLaunchParm lp,const int count,
 // count should be total anchors numbers, h * w * anchors
 // in-place write: boxes and out_pred_boxes are the same location
 template<typename Dtype>
-__global__ void BBoxPredKernel(hipLaunchParm lp,const int count,
+__global__ void BBoxPredKernel(const int count,
                                const int num_anchors,
                                const int feat_height,
                                const int feat_width,
@@ -130,7 +130,7 @@ __global__ void BBoxPredKernel(hipLaunchParm lp,const int count,
 // count should be total anchors numbers, h * w * anchors
 // in-place write: boxes and out_pred_boxes are the same location
 template<typename Dtype>
-__global__ void IoUPredKernel(hipLaunchParm lp,const int count,
+__global__ void IoUPredKernel(const int count,
                               const int num_anchors,
                               const int feat_height,
                               const int feat_width,
@@ -178,7 +178,7 @@ __global__ void IoUPredKernel(hipLaunchParm lp,const int count,
 // filter: set score to zero
 // dets (n, 5)
 template<typename Dtype>
-__global__ void FilterBoxKernel(hipLaunchParm lp,const int count,
+__global__ void FilterBoxKernel(const int count,
                                 const float min_size,
                                 Dtype* dets) {
   for (int index = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
@@ -200,7 +200,7 @@ __global__ void FilterBoxKernel(hipLaunchParm lp,const int count,
 // dets (n, 5); score (n, ); order (n, )
 // count should be n (total anchors or proposals)
 template<typename Dtype>
-__global__ void CopyScoreKernel(hipLaunchParm lp,const int count,
+__global__ void CopyScoreKernel(const int count,
                                 const Dtype* dets,
                                 Dtype* score,
                                 int* order) {
@@ -216,7 +216,7 @@ __global__ void CopyScoreKernel(hipLaunchParm lp,const int count,
 // prev_dets (n, 5); order (n, ); dets (n, 5)
 // count should be output anchor numbers (top_n)
 template<typename Dtype>
-__global__ void ReorderProposalsKernel(hipLaunchParm lp,const int count,
+__global__ void ReorderProposalsKernel(const int count,
                                        const Dtype* prev_dets,
                                        const int* order,
                                        Dtype* dets) {
@@ -240,7 +240,7 @@ __device__ inline float devIoU(float const * const a, float const * const b) {
   return interS / (Sa + Sb - interS);
 }
 
-__global__ void nms_kernel(hipLaunchParm lp,const int n_boxes, const float nms_overlap_thresh,
+__global__ void nms_kernel(const int n_boxes, const float nms_overlap_thresh,
                            const float *dev_boxes, uint64_t *dev_mask) {
   const int threadsPerBlock = sizeof(uint64_t) * 8;
   const int row_start = hipBlockIdx_y;
@@ -269,7 +269,7 @@ __global__ void nms_kernel(hipLaunchParm lp,const int n_boxes, const float nms_o
   __syncthreads();
 
   if (hipThreadIdx_x < row_size) {
-    const int cur_box_idx = threadsPerBlock * row_start + threadIdx.x;
+    const int cur_box_idx = threadsPerBlock * row_start + hipThreadIdx_x;
     const float *cur_box = dev_boxes + cur_box_idx * 5;
     int i = 0;
     uint64_t t = 0;
@@ -341,7 +341,7 @@ void _nms(const mshadow::Tensor<gpu, 2>& boxes,
 // dets (top_n, 5); keep (top_n, ); out (top_n, )
 // count should be top_n (total anchors or proposals)
 template<typename Dtype>
-__global__ void PrepareOutput(hipLaunchParm lp,const int count,
+__global__ void PrepareOutput(const int count,
                               const Dtype* dets,
                               const int* keep,
                               const int out_size,

@@ -328,7 +328,7 @@ class CuDNNDeconvolutionOp : public Operator {
  * \brief Translate an mxnet datatype to the corresponding miopenDataType_t.
  */
   miopenDataType_t convertToCuDNNDataType(int dtype) {
-    miopenDataType_t converted = CUDNN_DATA_FLOAT;
+    miopenDataType_t converted = miopenFloat;
     // The following will always assign to `converted` or throw an exception.
     MSHADOW_REAL_TYPE_SWITCH(dtype, mxDType, {
       converted = mshadow::DataType<mxDType>::kCudnnFlag;
@@ -591,7 +591,7 @@ class CuDNNDeconvolutionOp : public Operator {
                      fwd_algo));
           i = 0;
           while (i < nalgo
-               && (fwd_algo[i].status != CUDNN_STATUS_SUCCESS
+               && (fwd_algo[i].status != miopenStatusSuccess
                || (param_.cudnn_tune.value() == deconv::kLimited
                && fwd_algo[i].memory > workspace_byte))) ++i;
           if (i == nalgo) {
@@ -613,7 +613,7 @@ class CuDNNDeconvolutionOp : public Operator {
                    bwd_filter_algo));
         i = 0;
         while (i < nalgo
-               && (bwd_filter_algo[i].status != CUDNN_STATUS_SUCCESS
+               && (bwd_filter_algo[i].status != miopenStatusSuccess
                || (param_.cudnn_tune.value() == deconv::kLimited
                && bwd_filter_algo[i].memory > workspace_byte))) ++i;
         if (i == nalgo) {
@@ -634,7 +634,7 @@ class CuDNNDeconvolutionOp : public Operator {
                    bwd_data_algo));
         i = 0;
         while (i < nalgo
-               && (bwd_data_algo[i].status != CUDNN_STATUS_SUCCESS
+               && (bwd_data_algo[i].status != miopenStatusSuccess
                || (param_.cudnn_tune.value() == deconv::kLimited
                && bwd_data_algo[i].memory > workspace_byte))) ++i;
         if (i == nalgo) {

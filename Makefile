@@ -49,7 +49,7 @@ ifeq ($(DEBUG), 1)
 else
 	CFLAGS += -O3
 endif
-CFLAGS += -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
+CFLAGS += -I/opt/rocm/include -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
 LDFLAGS = -pthread $(MSHADOW_LDFLAGS) $(DMLC_LDFLAGS)
 ifeq ($(DEBUG), 1)
 	NVCCFLAGS = -std=c++11 -Xcompiler -D_FORCE_INLINES -g -G -O0 -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
@@ -185,7 +185,7 @@ LIB_DEP += $(DMLC_CORE)/libdmlc.a $(NNVM_PATH)/lib/libnnvm.a
 ALL_DEP = $(OBJ) $(EXTRA_OBJ) $(PLUGIN_OBJ) $(LIB_DEP)
 
 ifeq ($(USE_CUDA), 1)
-	CFLAGS += -I$(ROOTDIR)/cub
+	CFLAGS += -I$(ROOTDIR)/cub-hip
 	ALL_DEP += $(CUOBJ) $(EXTRA_CUOBJ) $(PLUGIN_CUOBJ)
 	LDFLAGS += -lcuda -lcufft
 	SCALA_PKG_PROFILE := $(SCALA_PKG_PROFILE)-gpu
@@ -202,10 +202,13 @@ ifeq ($(USE_NVRTC), 1)
 else
 	CFLAGS += -DMXNET_USE_NVRTC=0
 endif
+ifeq ($(CXX), g++)
+	HIPFLAGS = -D__HIP_PLATFORM_NVCC__
+endif
 
 build/src/%.o: src/%.cc
 	@mkdir -p $(@D)
-	$(CXX) -std=c++11 -c $(CFLAGS) -MMD -c $< -o $@
+	$(CXX) -std=c++11 -c $(HIPFLAGS) $(CFLAGS) -MMD -c $< -o $@
 
 build/src/%_gpu.o: src/%.cu
 	@mkdir -p $(@D)

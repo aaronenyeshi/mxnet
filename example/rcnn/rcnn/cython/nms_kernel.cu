@@ -32,7 +32,7 @@ __device__ inline float devIoU(float const * const a, float const * const b) {
   return interS / (Sa + Sb - interS);
 }
 
-__global__ void nms_kernel(hipLaunchParm lp, const int n_boxes, const float nms_overlap_thresh,
+__global__ void nms_kernel( const int n_boxes, const float nms_overlap_thresh,
                            const float *dev_boxes, unsigned long long *dev_mask) {
   const int row_start = hipBlockIdx_y;
   const int col_start = hipBlockIdx_x;

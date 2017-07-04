@@ -14,7 +14,7 @@
 
 namespace mshadow {
 template<typename DType>
-__global__ void BilinearSamplingForwardKernel(hipLaunchParm lp,const int i_c, const int i_h,
+__global__ void BilinearSamplingForwardKernel(const int i_c, const int i_h,
                                               const int i_w, const DType* data,
                                               const DType* grid, const int o_n,
                                               const int o_c, const int o_h,
@@ -48,7 +48,7 @@ __global__ void BilinearSamplingForwardKernel(hipLaunchParm lp,const int i_c, co
 }
 
 template<typename DType>
-__global__ void BilinearSamplingBackwardKernel(hipLaunchParm lp,const int i_c, const int i_h,
+__global__ void BilinearSamplingBackwardKernel(const int i_c, const int i_h,
                                               const int i_w, const DType* grad,
                                               const DType* data, const int o_n,
                                               const int o_c, const int o_h,

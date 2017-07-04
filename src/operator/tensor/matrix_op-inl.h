@@ -1646,9 +1646,9 @@ struct reverse {
                               const index_t * trailing_) {
     __shared__ index_t stride_share[REVERSE_MAX_DIM];
     __shared__ index_t trailing_share[REVERSE_MAX_DIM];
-    if (threadIdx.x < REVERSE_MAX_DIM) {
-      stride_share[threadIdx.x] = stride_[threadIdx.x];
-      trailing_share[threadIdx.x] = trailing_[threadIdx.x];
+    if (hipThreadIdx_x < REVERSE_MAX_DIM) {
+      stride_share[hipThreadIdx_x] = stride_[hipThreadIdx_x];
+      trailing_share[hipThreadIdx_x] = trailing_[hipThreadIdx_x];
     }
     __syncthreads();
     index_t new_idx = ReverseIndex(index, nreversedim, stride_share, trailing_share);

@@ -15,7 +15,7 @@
 namespace mshadow {
 
 template<int n_bits, typename DType>
-__global__  void L1_SVMKernel(hipLaunchParm lp,const DType margin,
+__global__  void L1_SVMKernel(const DType margin,
                               const DType reg_coef,
                               Tensor<gpu, 2, DType> dst,
                               const Tensor<gpu, 1, DType> label,
@@ -49,7 +49,7 @@ inline void L1_SVM(const DType & margin,
 
 
 template<int n_bits, typename DType>
-__global__  void L2_SVMKernel(hipLaunchParm lp,const DType margin,
+__global__  void L2_SVMKernel(const DType margin,
                               const DType reg_coef,
                               Tensor<gpu, 2, DType> dst,
                               const Tensor<gpu, 1, DType> label,

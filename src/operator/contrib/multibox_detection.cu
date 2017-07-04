@@ -33,7 +33,7 @@ __device__ void CalculateOverlap(const DType *a, const DType *b, DType *iou) {
 }
 
 template<typename DType>
-__global__ void DetectionForwardKernel(hipLaunchParm lp,DType *out, const DType *cls_prob,
+__global__ void DetectionForwardKernel(DType *out, const DType *cls_prob,
                                        const DType *loc_pred, const DType *anchors,
                                        DType *temp_space, const int num_classes,
                                        const int num_anchors, const float threshold,
@@ -41,7 +41,7 @@ __global__ void DetectionForwardKernel(hipLaunchParm lp,DType *out, const DType 
                                        const float vy, const float vw,
                                        const float vh, const float nms_threshold,
                                        const bool force_suppress, const int nms_topk) {
-  const int nbatch = blockIdx.x;  // each block for each batch
+  const int nbatch = hipBlockIdx_x;  // each block for each batch
   int index = hipThreadIdx_x;
   __shared__ int valid_count;
   out += nbatch * num_anchors * 6;

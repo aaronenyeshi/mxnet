@@ -14,7 +14,7 @@ namespace op {
 const int kWarpSize = 32;
 
 template<int SZ, typename DType, typename IdxType>
-__global__ void AddTakeGradLargeBatchKernel(hipLaunchParm lp,DType* dst,
+__global__ void AddTakeGradLargeBatchKernel(DType* dst,
                                            // If idx_start == NULL, then in-kernel edge
                                            // detection is used
                                            const IdxType *idx_start,

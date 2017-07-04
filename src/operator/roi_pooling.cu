@@ -15,7 +15,7 @@ namespace mshadow {
 namespace cuda {
 
 template<typename Dtype>
-__global__ void ROIPoolForwardKernel(hipLaunchParm lp,const int count, const Dtype* bottom_data,
+__global__ void ROIPoolForwardKernel(const int count, const Dtype* bottom_data,
                                      const float spatial_scale, const int channels,
                                      const int height, const int width,
                                      const int pooled_height, const int pooled_width,
@@ -114,7 +114,7 @@ inline void ROIPoolForward(const Tensor<gpu, 4, Dtype> &out,
 }
 
 template<typename Dtype>
-__global__ void ROIPoolBackwardAccKernel(hipLaunchParm lp,const int count, const Dtype* top_diff,
+__global__ void ROIPoolBackwardAccKernel(const int count, const Dtype* top_diff,
                                          const Dtype* argmax_data, const int num_rois,
                                          const float spatial_scale, const int channels,
                                          const int height, const int width,

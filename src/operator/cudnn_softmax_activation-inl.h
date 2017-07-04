@@ -18,7 +18,7 @@ class CuDNNSoftmaxActivationOp : public Operator {
   explicit CuDNNSoftmaxActivationOp(SoftmaxActivationParam param) {
     this->param_ = param;
     init_cudnn_ = false;
-    dtype_ = CUDNN_DATA_FLOAT;
+    dtype_ = miopenFloat;
   }
 
   ~CuDNNSoftmaxActivationOp() {

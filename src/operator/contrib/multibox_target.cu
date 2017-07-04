@@ -18,7 +18,7 @@
 namespace mshadow {
 namespace cuda {
 template<typename DType>
-__global__ void InitGroundTruthFlags(hipLaunchParm lp,DType *gt_flags, const DType *labels,
+__global__ void InitGroundTruthFlags(DType *gt_flags, const DType *labels,
                                      const int num_batches,
                                      const int num_labels,
                                      const int label_width) {
@@ -75,9 +75,9 @@ __global__ void FindBestMatches(DType *best_matches, DType *gt_flags,
         }
       }
     }
-    max_indices_x[hipThreadIdx.x] = max_x;
-    max_indices_y[hipThreadIdx.x] = max_y;
-    max_values[hipThreadIdx.x] = max_value;
+    max_indices_x[hipThreadIdx_x] = max_x;
+    max_indices_y[hipThreadIdx_x] = max_y;
+    max_values[hipThreadIdx_x] = max_value;
     __syncthreads();
 
     if (hipThreadIdx_x == 0) {
@@ -111,7 +111,7 @@ __global__ void FindBestMatches(DType *best_matches, DType *gt_flags,
 }
 
 template<typename DType>
-__global__ void FindGoodMatches(hipLaunchParm lp,DType *best_matches, DType *anchor_flags,
+__global__ void FindGoodMatches(DType *best_matches, DType *anchor_flags,
                                 const DType *overlaps, const int num_anchors,
                                 const int num_labels,
                                 const float overlap_threshold) {
@@ -141,7 +141,7 @@ __global__ void FindGoodMatches(hipLaunchParm lp,DType *best_matches, DType *anc
 }
 
 template<typename DType>
-__global__ void UseAllNegatives(hipLaunchParm lp,DType *anchor_flags, const int num) {
+__global__ void UseAllNegatives(DType *anchor_flags, const int num) {
   int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
   if (idx >= num) return;
   if (anchor_flags[idx] < 0.5) {
@@ -150,7 +150,7 @@ __global__ void UseAllNegatives(hipLaunchParm lp,DType *anchor_flags, const int 
 }
 
 template<typename DType>
-__global__ void NegativeMining(hipLaunchParm lp,const DType *overlaps, const DType *cls_preds,
+__global__ void NegativeMining(const DType *overlaps, const DType *cls_preds,
                                DType *anchor_flags, DType *buffer,
                                const float negative_mining_ratio,
                                const float negative_mining_thresh,
@@ -263,7 +263,7 @@ __global__ void NegativeMining(hipLaunchParm lp,const DType *overlaps, const DTy
 }
 
 template<typename DType>
-__global__ void AssignTrainigTargets(hipLaunchParm lp,DType *loc_target, DType *loc_mask,
+__global__ void AssignTrainigTargets(DType *loc_target, DType *loc_mask,
                                      DType *cls_target, DType *anchor_flags,
                                      DType *best_matches, DType *labels,
                                      DType *anchors, const int num_anchors,

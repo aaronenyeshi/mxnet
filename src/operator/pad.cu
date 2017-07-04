@@ -19,7 +19,7 @@ namespace cuda {
 // https://github.com/torch/cunn/blob/master/lib/THCUNN/SpatialReplicationPadding.cu
 
 template <int n_bits, typename DType>
-__global__ void image_2d_pad_edge_kernel(hipLaunchParm lp,Tensor<gpu, 4, DType> dst,
+__global__ void image_2d_pad_edge_kernel(Tensor<gpu, 4, DType> dst,
                                          const Tensor<gpu, 4, DType> src,
                                          const int padT, const int padL) {
   int outputPointId = hipThreadIdx_x + hipBlockIdx_x * hipBlockDim_x;
@@ -62,7 +62,7 @@ inline void image_pad_edge(Tensor<gpu, 4, DType> dst,
 }
 
 template <int n_bits, typename DType>
-__global__ void image_2d_pad_edge_grad_kernel(hipLaunchParm lp,
+__global__ void image_2d_pad_edge_grad_kernel(
     Tensor<gpu, 4, DType> grad_in, const Tensor<gpu, 4, DType> grad_out,
     const int padT, const int padL) {
   int outputPointId = hipThreadIdx_x  + hipBlockIdx_x * hipBlockDim_x;
@@ -104,7 +104,7 @@ inline void image_pad_edge_grad(Tensor<gpu, 4, DType> grad_in,
 
 // Case 2: Constant Padding
 template <int n_bits, typename DType>
-__global__ void image_2d_pad_constant_kernel(hipLaunchParm lp,Tensor<gpu, 4, DType> dst,
+__global__ void image_2d_pad_constant_kernel(Tensor<gpu, 4, DType> dst,
                                              const Tensor<gpu, 4, DType> src,
                                              const int padT, const int padL,
                                              const DType constant) {
@@ -150,7 +150,7 @@ inline void image_pad_constant(Tensor<gpu, 4, DType> dst,
 }
 
 template <int n_bits, typename DType>
-__global__ void image_2d_pad_constant_grad_kernel(hipLaunchParm lp,
+__global__ void image_2d_pad_constant_grad_kernel(
     Tensor<gpu, 4, DType> grad_in, const Tensor<gpu, 4, DType> grad_out,
     const int padT, const int padL) {
   int inPointId = hipThreadIdx_x  + hipBlockIdx_x * hipBlockDim_x;
@@ -193,7 +193,7 @@ inline void image_pad_constant_grad(Tensor<gpu, 4, DType> grad_in,
 // https://github.com/torch/cunn/blob/master/lib/THCUNN/VolumetricReplicationPadding.cu
 
 template <int n_bits, typename DType>
-__global__ void image_3d_pad_edge_kernel(hipLaunchParm lp,Tensor<gpu, 5, DType> dst,
+__global__ void image_3d_pad_edge_kernel(Tensor<gpu, 5, DType> dst,
                                          const Tensor<gpu, 5, DType> src,
                                          const int padF, const int padT,
                                          const int padL) {
@@ -243,7 +243,7 @@ inline void image_pad_edge(Tensor<gpu, 5, DType> dst,
 }
 
 template <int n_bits, typename DType>
-__global__ void image_3d_pad_edge_grad_kernel(hipLaunchParm lp,
+__global__ void image_3d_pad_edge_grad_kernel(
     Tensor<gpu, 5, DType> grad_in, const Tensor<gpu, 5, DType> grad_out,
     const int padF, const int padT, const int padL) {
   int outputPointId = hipThreadIdx_x  + hipBlockIdx_x * hipBlockDim_x;
@@ -295,7 +295,7 @@ inline void image_pad_edge_grad(Tensor<gpu, 5, DType> grad_in,
 
 // Case 2: Constant Padding
 template <int n_bits, typename DType>
-__global__ void image_3d_pad_constant_kernel(hipLaunchParm lp,Tensor<gpu, 5, DType> dst,
+__global__ void image_3d_pad_constant_kernel(Tensor<gpu, 5, DType> dst,
                                              const Tensor<gpu, 5, DType> src,
                                              const int padF, const int padT,
                                              const int padL,
@@ -351,7 +351,7 @@ inline void image_pad_constant(Tensor<gpu, 5, DType> dst,
 }
 
 template <int n_bits, typename DType>
-__global__ void image_3d_pad_constant_grad_kernel(hipLaunchParm lp,
+__global__ void image_3d_pad_constant_grad_kernel(
     Tensor<gpu, 5, DType> grad_in, const Tensor<gpu, 5, DType> grad_out,
     const int padF, const int padT, const int padL) {
   int inPointId = hipThreadIdx_x  + hipBlockIdx_x * hipBlockDim_x;

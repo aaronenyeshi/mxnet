@@ -7,7 +7,8 @@
 #define MXNET_STORAGE_POOLED_STORAGE_MANAGER_H_
 
 #if MXNET_USE_CUDA
-  #include <cuda_runtime.h>
+  #include <hip/hip_runtime.h>
+//  #include <cuda_runtime.h>
 #endif  // MXNET_USE_CUDA
 #include <mxnet/base.h>
 #include <unordered_map>
@@ -47,7 +48,7 @@ class GPUPooledStorageManager final : public StorageManager {
     hipError_t err = hipFree(ptr);
     size_t size = raw_size + NDEV;
     // ignore unloading error, as memory has already been recycled
-    if (err != hipSuccess && err != hipErrorCudartUnloading) {
+    if (err != hipSuccess) {
       LOG(FATAL) << "CUDA: " << hipGetErrorString(err);
     }
     used_memory_ -= size;
@@ -80,7 +81,7 @@ void* GPUPooledStorageManager::Alloc(size_t raw_size) {
 
     void* ret = nullptr;
     hipError_t e = hipMalloc(&ret, size);
-    if (e != hipSuccess && e != hipErrorCudartUnloading) {
+    if (e != hipSuccess) {
       LOG(FATAL) << "cudaMalloc failed: " << hipGetErrorString(e);
     }
     used_memory_ += size;

@@ -19,6 +19,7 @@ namespace mxnet {
 namespace op {
 #if MXNET_USE_CUDNN == 1
 
+#include <miopen/miopen.h>
 class CuDNNAlgoReg {
  public:
   template <typename Param>

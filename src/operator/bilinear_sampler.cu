@@ -20,7 +20,7 @@ __device__ bool between(DType value, int lowerBound, int upperBound) {
   return (value >= lowerBound && value <= upperBound);
 }
 template<typename DType>
-__global__ void BilinearSamplerForwardKernel(hipLaunchParm lp,const int i_c, const int i_h,
+__global__ void BilinearSamplerForwardKernel(const int i_c, const int i_h,
                                               const int i_w, const DType* data,
                                               const DType* grid, const int o_n,
                                               const int o_c, const int o_h,
@@ -62,7 +62,7 @@ __global__ void BilinearSamplerForwardKernel(hipLaunchParm lp,const int i_c, con
 }
 
 template<typename DType>
-__global__ void BilinearSamplerBackwardKernel(hipLaunchParm lp,const int i_c, const int i_h,
+__global__ void BilinearSamplerBackwardKernel(const int i_c, const int i_h,
                                               const int i_w, const DType* grad,
                                               const DType* data, const int o_n,
                                               const int o_c, const int o_h,

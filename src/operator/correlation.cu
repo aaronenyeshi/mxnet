@@ -28,7 +28,7 @@ namespace mshadow {
 namespace cuda {
 // == Correlation Kernel
 template <typename Dtype>
-__global__ void CorrelateData(hipLaunchParm lp,const int nthreads, int num, int topwidth,
+__global__ void CorrelateData(const int nthreads, int num, int topwidth,
   int topheight, int topchannels, int topcount,
   int max_displacement, int neighborhood_grid_radius,
   int neighborhood_grid_width, int kernel_radius, int kernel_size, int stride1, int stride2,
@@ -88,7 +88,7 @@ __global__ void CorrelateData(hipLaunchParm lp,const int nthreads, int num, int 
 }
 //  == Correlation Backward Pass Kernel (For data1)
 template <typename Dtype>
-__global__ void CorrelateDataBackward0(hipLaunchParm lp,const int nthreads, int num, int item,
+__global__ void CorrelateDataBackward0(const int nthreads, int num, int item,
   int topwidth, int topheight, int topchannels,
   int max_displacement, int neighborhood_grid_radius,
   int neighborhood_grid_width, int kernel_radius, int stride1, int stride2,
@@ -149,7 +149,7 @@ __global__ void CorrelateDataBackward0(hipLaunchParm lp,const int nthreads, int 
 }
 // == Correlation Backward Pass Kernel (For Blob 1)
 template <typename Dtype>
-__global__ void CorrelateDataBackward1(hipLaunchParm lp,const int nthreads,
+__global__ void CorrelateDataBackward1(const int nthreads,
   int num, int item, int topwidth, int topheight, int topchannels,
   int max_displacement, int neighborhood_grid_radius,
   int neighborhood_grid_width, int kernel_radius, int stride1, int stride2,
@@ -216,7 +216,7 @@ __global__ void CorrelateDataBackward1(hipLaunchParm lp,const int nthreads,
 }
 // == Correlation Kernel Subtraction
 template <typename Dtype>
-__global__ void CorrelateDataSubtract(hipLaunchParm lp,const int nthreads, int num, int item,
+__global__ void CorrelateDataSubtract(const int nthreads, int num, int item,
   int topwidth, int topheight, int topchannels, int topcount,
   int max_displacement, int neighborhood_grid_radius,
   int neighborhood_grid_width, int kernel_radius, int stride1, int stride2,
@@ -256,7 +256,7 @@ __global__ void CorrelateDataSubtract(hipLaunchParm lp,const int nthreads, int n
 }
 //  == Correlation Backward Pass Kernel (For Blob 0)
 template <typename Dtype>
-__global__ void CorrelateDataBackward0Subtract(hipLaunchParm lp,const int nthreads, int num,
+__global__ void CorrelateDataBackward0Subtract(const int nthreads, int num,
   int item, int topwidth, int topheight, int topchannels,
   int max_displacement, int neighborhood_grid_radius,
   int neighborhood_grid_width, int kernel_radius,
@@ -322,7 +322,7 @@ __global__ void CorrelateDataBackward0Subtract(hipLaunchParm lp,const int nthrea
 }
 //  == Correlation Backward Pass Kernel (For Blob 1)
 template <typename Dtype>
-__global__ void CorrelateDataBackward1Subtract(hipLaunchParm lp,const int nthreads, int num,
+__global__ void CorrelateDataBackward1Subtract(const int nthreads, int num,
   int item, int topwidth, int topheight, int topchannels,
   int max_displacement, int neighborhood_grid_radius,
   int neighborhood_grid_width, int kernel_radius,
@@ -396,7 +396,7 @@ __global__ void CorrelateDataBackward1Subtract(hipLaunchParm lp,const int nthrea
 //  == Forward
 //  == Dimension rearrangement Kernel
 template <typename Dtype>
-__global__ void blob_rearrange_kernel2(hipLaunchParm lp,const Dtype* in, Dtype* out, int num,
+__global__ void blob_rearrange_kernel2(const Dtype* in, Dtype* out, int num,
 int channels, int width, int height, int widthheight, int padding, int pwidthheight) {
     //  change shape from [batchsize,channel,y,x] to [batchsize,y,x,channel]
     int xy = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
