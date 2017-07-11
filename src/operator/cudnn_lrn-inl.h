@@ -48,13 +48,12 @@ class CuDNNLocalResponseNormOp : public Operator {
     CHECK_EQ(s->dnn_handle_ownership_, mshadow::Stream<gpu>::OwnHandle);
     CUDNN_CALL(miopenLRNForward(s->dnn_handle_,
                                            lrn_desc_,
-                                           CUDNN_LRN_CROSS_CHANNEL_DIM1,
                                            &alpha,
                                            shape_desc_,
                                            data.dptr_,
                                            &beta,
                                            shape_desc_,
-                                           out.dptr_));
+                                           out.dptr_, false, nullptr)); // TODO temporary fix
   }
 
   virtual void Backward(const OpContext &ctx,
@@ -81,7 +80,6 @@ class CuDNNLocalResponseNormOp : public Operator {
     CHECK_EQ(s->dnn_handle_ownership_, mshadow::Stream<gpu>::OwnHandle);
     CUDNN_CALL(miopenLRNBackward(s->dnn_handle_,
                                             lrn_desc_,
-                                            CUDNN_LRN_CROSS_CHANNEL_DIM1,
                                             &alpha,
                                             shape_desc_,
                                             output_data.dptr_,
@@ -91,7 +89,7 @@ class CuDNNLocalResponseNormOp : public Operator {
                                             data.dptr_,
                                             &beta,
                                             shape_desc_,
-                                            input_grad.dptr_));
+                                            input_grad.dptr_, nullptr)); //TODO temporary fix
   }
 
  private:
@@ -111,7 +109,9 @@ class CuDNNLocalResponseNormOp : public Operator {
       double lrn_k = param_.knorm;
       CHECK_EQ(data.shape_, out.shape_);
       CUDNN_CALL(miopenCreateLRNDescriptor(&lrn_desc_));
+      miopenLRNMode_t mode;
       CUDNN_CALL(miopenSetLRNDescriptor(lrn_desc_,
+				       mode,
                                        lrn_n,
                                        alpha,
                                        beta,

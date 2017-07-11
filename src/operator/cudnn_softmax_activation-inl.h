@@ -39,7 +39,7 @@ class CuDNNSoftmaxActivationOp : public Operator {
     Stream<gpu> *s = ctx.get_stream<gpu>();
     Tensor<gpu, 4> data;
     Tensor<gpu, 4> out;
-    cudnnSoftmaxMode_t softmax_mode;
+    //cudnnSoftmaxMode_t softmax_mode; //MIOpen does not support Softmax modes.
     if (param_.mode == softmax_activation::kInstance) {
       CHECK_EQ(in_data[softmax_activation::kData].ndim(), 2)
         << "Input need to have 2 dimensions when mode=instance.";
@@ -47,7 +47,7 @@ class CuDNNSoftmaxActivationOp : public Operator {
                                in_data[softmax_activation::kData].shape_[1], 1, 1);
       data = in_data[softmax_activation::kData].get_with_shape<gpu, 4, real_t>(dshape, s);
       out = out_data[softmax_activation::kOut].get_with_shape<gpu, 4, real_t>(dshape, s);
-      softmax_mode = CUDNN_SOFTMAX_MODE_INSTANCE;
+      //softmax_mode = CUDNN_SOFTMAX_MODE_INSTANCE; //MIOpen does not support Softmax modes.
     } else {
       CHECK_GE(in_data[softmax_activation::kData].ndim(), 3)
         << "Input need to have a least 3 dimensions when mode=channel";
@@ -64,7 +64,7 @@ class CuDNNSoftmaxActivationOp : public Operator {
       dshape[3] = size_left;
       data = in_data[softmax_activation::kData].get_with_shape<gpu, 4, real_t>(dshape, s);
       out = out_data[softmax_activation::kOut].get_with_shape<gpu, 4, real_t>(dshape, s);
-      softmax_mode = CUDNN_SOFTMAX_MODE_CHANNEL;
+      //softmax_mode = CUDNN_SOFTMAX_MODE_CHANNEL; //MIOpen does not support Softmax modes.
     }
     float alpha = 1.0f;
     float beta = 0.0f;
@@ -80,8 +80,6 @@ class CuDNNSoftmaxActivationOp : public Operator {
                                             data.shape_[3]));
     }
     CUDNN_CALL(miopenSoftmaxForward(s->dnn_handle_,
-                                   CUDNN_SOFTMAX_ACCURATE,
-                                   softmax_mode,
                                    &alpha,
                                    shape_desc_,
                                    data.dptr_,
@@ -110,7 +108,7 @@ class CuDNNSoftmaxActivationOp : public Operator {
     Tensor<gpu, 4> data;
     Tensor<gpu, 4> output_data;
     Tensor<gpu, 4> input_grad;
-    cudnnSoftmaxMode_t softmax_mode;
+    //cudnnSoftmaxMode_t softmax_mode; //MIOpen does not support Softmax modes.
     if (param_.mode == softmax_activation::kInstance) {
       CHECK_EQ(in_grad[softmax_activation::kData].ndim(), 2)
         << "Input need to have 2 dimensions when mode=instance.";
@@ -119,7 +117,7 @@ class CuDNNSoftmaxActivationOp : public Operator {
       grad = out_grad[softmax_activation::kOut].get_with_shape<gpu, 4, real_t>(dshape, s);
       output_data = out_data[softmax_activation::kOut].get_with_shape<gpu, 4, real_t>(dshape, s);
       input_grad = in_grad[softmax_activation::kData].get_with_shape<gpu, 4, real_t>(dshape, s);
-      softmax_mode = CUDNN_SOFTMAX_MODE_INSTANCE;
+      //softmax_mode = CUDNN_SOFTMAX_MODE_INSTANCE; //MIOpen does not support Softmax modes.
     } else {
       CHECK_GE(in_grad[softmax_activation::kData].ndim(), 3)
         << "Input need to have a least 3 dimensions when mode=channel";
@@ -137,12 +135,10 @@ class CuDNNSoftmaxActivationOp : public Operator {
       output_data = out_data[softmax_activation::kOut].get_with_shape<gpu, 4, real_t>(dshape, s);
       grad = out_grad[softmax_activation::kOut].get_with_shape<gpu, 4, real_t>(dshape, s);
       input_grad = in_grad[softmax_activation::kData].get_with_shape<gpu, 4, real_t>(dshape, s);
-      softmax_mode = CUDNN_SOFTMAX_MODE_CHANNEL;
+      //softmax_mode = CUDNN_SOFTMAX_MODE_CHANNEL; //MIOpen does not support Softmax modes.
     }
     CHECK_EQ(s->dnn_handle_ownership_, mshadow::Stream<gpu>::OwnHandle);
     CUDNN_CALL(miopenSoftmaxBackward(s->dnn_handle_,
-                                    CUDNN_SOFTMAX_ACCURATE,
-                                    softmax_mode,
                                     &alpha,
                                     shape_desc_,
                                     output_data.dptr_,

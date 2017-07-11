@@ -13,6 +13,9 @@
 #include <utility>
 #include "./batch_norm-inl.h"
 
+#define CUDNN_BN_MIN_EPSILON 1e-5 // TODO . Not defined in miopen
+
+
 namespace mxnet {
 namespace op {
 #if MXNET_USE_CUDNN == 1 && CUDNN_MAJOR >= 4
@@ -28,7 +31,7 @@ class CuDNNBatchNormOp : public Operator {
  public:
   explicit CuDNNBatchNormOp(BatchNormParam param) {
     using namespace mshadow;
-    CHECK_GT(param.eps, CUDNN_BN_MIN_EPSILON)
+    CHECK_GT(param.eps, CUDNN_BN_MIN_EPSILON) //TODO CUDNN_BN_MIN_EPSILON is inlcude in miopen.h
      << "CuDNN requires eps to be greater than " << CUDNN_BN_MIN_EPSILON;
     this->param_ = param;
     init_cudnn_ = false;
@@ -83,7 +86,7 @@ class CuDNNBatchNormOp : public Operator {
                                             shape_[3]));
       CUDNN_CALL(miopenDeriveBNTensorDescriptor(mean_desc_,
                                                io_desc_,
-                                               CUDNN_BATCHNORM_SPATIAL));
+                                               miopenBNSpatial));
       init_cudnn_  = true;
     }
 
@@ -117,7 +120,7 @@ class CuDNNBatchNormOp : public Operator {
           out_data[cudnnbatchnorm::kInvVar]
           .get_with_shape<gpu, 1, DTypeParam>(Shape1(shape_[1]), s);
         CUDNN_CALL(miopenBatchNormalizationForwardTraining(s->dnn_handle_,
-                                                          CUDNN_BATCHNORM_SPATIAL,
+                                                          miopenBNSpatial,
                                                           &a,
                                                           &b,
                                                           io_desc_,
@@ -134,8 +137,8 @@ class CuDNNBatchNormOp : public Operator {
                                                           save_mean.dptr_,
                                                           save_inv_var.dptr_));
       } else {
-        CUDNN_CALL(cudnnBatchNormalizationForwardInference(s->dnn_handle_,
-                                                           CUDNN_BATCHNORM_SPATIAL,
+        CUDNN_CALL(miopenBatchNormalizationForwardInference(s->dnn_handle_,
+                                                           miopenBNSpatial,
                                                            &a,
                                                            &b,
                                                            io_desc_,
@@ -198,7 +201,7 @@ class CuDNNBatchNormOp : public Operator {
 
       CUDNN_CALL(miopenBatchNormalizationBackward(
         s->dnn_handle_,
-        CUDNN_BATCHNORM_SPATIAL,
+        miopenBNSpatial,
         &a,
         &b,
         &a,
@@ -238,7 +241,7 @@ class CuDNNBatchNormOp : public Operator {
 
       if (param_.fix_gamma) gamma = 1.f;
       CUDNN_CALL(miopenBatchNormalizationBackward(s->dnn_handle_,
-                                                 CUDNN_BATCHNORM_SPATIAL,
+                                                 miopenBNSpatial,
                                                  &a,
                                                  &b,
                                                  io_desc_,

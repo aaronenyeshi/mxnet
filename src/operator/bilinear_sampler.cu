@@ -151,7 +151,7 @@ inline void BilinearSamplerForward(const Tensor<gpu, 4, DType> &output,
       i_c, i_h, i_w, data, grid, o_n, o_c, o_h, o_w, out);
     // post kernel check
     hipError_t err = hipPeekAtLastError();
-    CHECK_EQ(err, hipSuccess) << hipGetErrorString()(err);
+    CHECK_EQ(err, hipSuccess) << hipGetErrorString(err);
 }
 
 template<typename DType>

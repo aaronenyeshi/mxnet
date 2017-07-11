@@ -22,22 +22,24 @@ class CuDNNActivationOp : public Operator {
     dtype_ = mshadow::DataType<DType>::kCudnnFlag;
     switch (param_.act_type) {
       case activation::kReLU:
-        mode_ = CUDNN_ACTIVATION_RELU;
+        mode_ = miopenActivationRELU;
         break;
       case activation::kSigmoid:
-        mode_ = CUDNN_ACTIVATION_SIGMOID;
+        mode_ = miopenActivationLOGISTIC;
         break;
       case activation::kTanh:
-        mode_ = CUDNN_ACTIVATION_TANH;
+        mode_ = miopenActivationTANH;
         break;
       default:
         LOG(FATAL) << "Not implmented";
         break;
     }
     #if CUDNN_MAJOR >= 5
-    nan_prop_ = CUDNN_NOT_PROPAGATE_NAN;
+    //nan_prop_ = CUDNN_NOT_PROPAGATE_NAN; //TODO not supported
     CUDNN_CALL(miopenCreateActivationDescriptor(&desc_));
-    CUDNN_CALL(miopenSetActivationDescriptor(desc_, mode_, nan_prop_, relu_ceil_));
+    double alpha = 1.0f; //TODO temporary fix for arguments
+    double beta  = 0.0f; //TODO temporary fix for arguments
+    CUDNN_CALL(miopenSetActivationDescriptor(desc_, mode_, alpha , beta ,relu_ceil_)); //TODO temporary fix
     #endif
   }
 
@@ -199,7 +201,7 @@ class CuDNNActivationOp : public Operator {
   ActivationParam param_;
 #if CUDNN_MAJOR >= 5
   miopenActivationDescriptor_t desc_;
-  cudnnNanPropagation_t nan_prop_;
+  //cudnnNanPropagation_t nan_prop_; //TODO not supported
   double relu_ceil_;
 #endif
 };  // class CuDNNActivationOp
