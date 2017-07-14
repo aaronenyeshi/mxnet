@@ -305,7 +305,7 @@ struct hypot_grad_right {
 struct degrees {
   template<typename DType>
   MSHADOW_XINLINE static DType Map(DType a) {
-    return DType(180. / PI * a);
+    return DType(180. / PI) * a;
   }
 };
 
@@ -319,7 +319,7 @@ struct degrees_grad {
 struct radians {
   template<typename DType>
   MSHADOW_XINLINE static DType Map(DType a) {
-    return DType(PI /180. * a);
+    return DType(PI /180.) * a;
   }
 };
 
@@ -456,7 +456,7 @@ struct power {
 struct power_grad {
   template<typename DType>
   MSHADOW_XINLINE static DType Map(DType a, DType b) {
-    return DType(powf( a, b - 1 )*b);
+    return DType(powf( a, b - 1 ))*b;
   }
 };
 
@@ -477,7 +477,7 @@ struct rpower {
 struct rpower_grad {
   template<typename DType>
   MSHADOW_XINLINE static DType Map(DType a, DType b) {
-    return DType(a*logf(b));
+    return a*DType(logf(b));
   }
 };
 
@@ -558,14 +558,14 @@ struct square_root_grad {
 struct reciprocal_square_root {
   template<typename DType>
   MSHADOW_XINLINE static DType Map(DType a) {
-    return DType(DType(1.0f)/sqrtf(a));
+    return DType(DType(1.0f)/DType(sqrtf(a)));
   }
 };
 
 struct reciprocal_square_root_grad {
   template<typename DType>
   MSHADOW_XINLINE static DType Map(DType a) {
-    return DType(-(DType(1.0f) / (DType(2.0f) * a * sqrtf(a))));
+    return DType(-(DType(1.0f) / (DType(2.0f) * a * DType(sqrtf(a)))));
   }
 };
 
@@ -744,7 +744,7 @@ struct smooth_l1_loss {
     } else if (a < -1.0f / b) {
       return -a - 0.5f / b;
     } else {
-      return 0.5f * a * a * b;
+      return DType(0.5f) * a * a * b;
     }
   }
 };  // struct smooth_l1_loss

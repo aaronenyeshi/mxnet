@@ -49,7 +49,9 @@ ifeq ($(DEBUG), 1)
 else
 	CFLAGS += -O3
 endif
-CFLAGS += -I/opt/rocm/include -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
+HIPINCLUDES = -I. -I/opt/rocm/include -I/opt/rocm/hcblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include/ -I/home/tcs/Workspace/ROCm/thrust_ROCM/
+#CLANGINCLUDES = -I/opt/rocm/hcc-1.0/compiler/lib/clang/5.0.0/include -I/home/tcs/Workspace/ROCm/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/include/c++/v1 -I/home/tcs/Workspace/ROCm/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/lib/clang/4.0.0/include
+CFLAGS += $(CLANGINCLUDES) $(HIPINCLUDES) -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
 LDFLAGS = -pthread $(MSHADOW_LDFLAGS) $(DMLC_LDFLAGS)
 ifeq ($(DEBUG), 1)
 	NVCCFLAGS = -std=c++11 -Xcompiler -D_FORCE_INLINES -g -G -O0 -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
@@ -144,6 +146,8 @@ SRC = $(wildcard src/*/*/*.cc src/*/*.cc src/*.cc)
 OBJ = $(patsubst %.cc, build/%.o, $(SRC))
 CUSRC = $(wildcard src/*/*/*.cu src/*/*.cu src/*.cu)
 CUOBJ = $(patsubst %.cu, build/%_gpu.o, $(CUSRC))
+HIPSRC = $(wildcard src/*/*/*_hip.cpp src/*/*_hip.cpp src/*_hip.cpp)
+HIPOBJ = $(patsubst %_hip.cpp, build/%_hip_gpu.o, $(HIPSRC))
 
 # extra operators
 ifneq ($(EXTRA_OPERATORS),)
@@ -186,8 +190,10 @@ ALL_DEP = $(OBJ) $(EXTRA_OBJ) $(PLUGIN_OBJ) $(LIB_DEP)
 
 ifeq ($(USE_CUDA), 1)
 	CFLAGS += -I$(ROOTDIR)/cub-hip
-	ALL_DEP += $(CUOBJ) $(EXTRA_CUOBJ) $(PLUGIN_CUOBJ)
-	LDFLAGS += -lcuda -lcufft -L/opt/rocm/hip/lib -lhip_hcc
+	ALL_DEP += $(HIPOBJ)
+	#ALL_DEP += $(CUOBJ) $(EXTRA_CUOBJ) $(PLUGIN_CUOBJ)
+	LDFLAGS += -L/opt/rocm/hip/lib -lhip_hcc
+	#LDFLAGS += -lcuda -lcufft -L/opt/rocm/hip/lib -lhip_hcc
 	SCALA_PKG_PROFILE := $(SCALA_PKG_PROFILE)-gpu
 else
 	SCALA_PKG_PROFILE := $(SCALA_PKG_PROFILE)-cpu

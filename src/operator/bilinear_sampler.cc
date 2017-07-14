@@ -27,8 +27,8 @@ inline void BilinearSamplerForward(const Tensor<cpu, 4, DType> &output,
         for (index_t w = 0; w < o_w; ++w) {
           index_t out_index = n * o_c * o_h * o_w + c * o_h * o_w + h * o_w + w;
           index_t grid_index = n * o_h * o_w * 2 + h * o_w + w;
-          DType y_real = (*(grid + grid_index + o_h * o_w) + 1) * (i_h - 1) / 2;
-          DType x_real = (*(grid + grid_index) + 1) * (i_w - 1) / 2;
+          DType y_real = (*(grid + grid_index + o_h * o_w) + 1) * DType((i_h - 1) / 2);
+          DType x_real = (*(grid + grid_index) + 1) * DType((i_w - 1) / 2);
           int top_left_y = static_cast<int>(floor(y_real));
           int top_left_x = static_cast<int>(floor(x_real));
           DType top_left_y_w = 1.0 - (y_real - top_left_y);

@@ -41,10 +41,10 @@ inline void TransformLocations(DType *out, const DType *anchors,
   DType py = loc_pred[1];
   DType pw = loc_pred[2];
   DType ph = loc_pred[3];
-  DType ox = px * vx * aw + ax;
-  DType oy = py * vy * ah + ay;
-  DType ow = exp(pw * vw) * aw / 2;
-  DType oh = exp(ph * vh) * ah / 2;
+  DType ox = px * DType(vx) * aw + ax;
+  DType oy = py * DType(vy) * ah + ay;
+  DType ow = DType(exp(pw * DType(vw))) * aw / 2;
+  DType oh = DType(exp(ph * DType(vh))) * ah / 2;
   out[0] = clip ? std::max(DType(0), std::min(DType(1), ox - ow)) : (ox - ow);
   out[1] = clip ? std::max(DType(0), std::min(DType(1), oy - oh)) : (oy - oh);
   out[2] = clip ? std::max(DType(0), std::min(DType(1), ox + ow)) : (ox + ow);
