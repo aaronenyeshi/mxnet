@@ -8,7 +8,7 @@
 */
 
 #include "./svm_output-inl.h"
-#include <device_launch_parameters.h>
+//#include <device_launch_parameters.h>
 #include "mshadow/tensor.h"
 
 

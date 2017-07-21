@@ -49,8 +49,8 @@ ifeq ($(DEBUG), 1)
 else
 	CFLAGS += -O3
 endif
-HIPINCLUDES = -I. -I/opt/rocm/include -I/opt/rocm/hcblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include/ -I/home/tcs/Workspace/ROCm/thrust_ROCM/
-#CLANGINCLUDES = -I/opt/rocm/hcc-1.0/compiler/lib/clang/5.0.0/include -I/home/tcs/Workspace/ROCm/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/include/c++/v1 -I/home/tcs/Workspace/ROCm/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/lib/clang/4.0.0/include
+HIPINCLUDES = -I. -I/opt/rocm/include -I/opt/rocm/hcblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include/ -I/home/tcs/AMD/Workspace/15-05-2017/Thrust
+#CLANGINCLUDES = -I/opt/rocm/hcc-1.0/compiler/lib/clang/5.0.0/include -I/home/tcs/AMD/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/include/c++/v1 -I/home/tcs/AMD/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.04/lib/clang/4.0.0/include
 CFLAGS += $(CLANGINCLUDES) $(HIPINCLUDES) -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
 LDFLAGS = -pthread $(MSHADOW_LDFLAGS) $(DMLC_LDFLAGS)
 ifeq ($(DEBUG), 1)
@@ -146,7 +146,7 @@ SRC = $(wildcard src/*/*/*.cc src/*/*.cc src/*.cc)
 OBJ = $(patsubst %.cc, build/%.o, $(SRC))
 CUSRC = $(wildcard src/*/*/*.cu src/*/*.cu src/*.cu)
 CUOBJ = $(patsubst %.cu, build/%_gpu.o, $(CUSRC))
-HIPSRC = $(wildcard src/*/*/*_hip.cpp src/*/*_hip.cpp src/*_hip.cpp)
+HIPSRC = $(patsubst %.cu, %_hip.cpp, $(CUSRC))
 HIPOBJ = $(patsubst %_hip.cpp, build/%_hip_gpu.o, $(HIPSRC))
 
 # extra operators
@@ -189,10 +189,10 @@ LIB_DEP += $(DMLC_CORE)/libdmlc.a $(NNVM_PATH)/lib/libnnvm.a
 ALL_DEP = $(OBJ) $(EXTRA_OBJ) $(PLUGIN_OBJ) $(LIB_DEP)
 
 ifeq ($(USE_CUDA), 1)
-	CFLAGS += -I$(ROOTDIR)/cub-hip
-	ALL_DEP += $(HIPOBJ)
-	#ALL_DEP += $(CUOBJ) $(EXTRA_CUOBJ) $(PLUGIN_CUOBJ)
-	LDFLAGS += -L/opt/rocm/hip/lib -lhip_hcc
+#	CFLAGS += -I$(ROOTDIR)/cub-hip
+#	ALL_DEP += $(HIPOBJ)
+	ALL_DEP += $(CUOBJ) $(EXTRA_CUOBJ) $(PLUGIN_CUOBJ)
+	LDFLAGS += -L/opt/rocm/hip/lib -lhip_hcc -L/opt/rocm/hcblas/lib -lhipblas_hcc -L/opt/rocm/hcrng/lib -lhiprng_hcc
 	#LDFLAGS += -lcuda -lcufft -L/opt/rocm/hip/lib -lhip_hcc
 	SCALA_PKG_PROFILE := $(SCALA_PKG_PROFILE)-gpu
 else
@@ -209,7 +209,7 @@ else
 	CFLAGS += -DMXNET_USE_NVRTC=0
 endif
 ifeq ($(CXX), g++)
-	HIPFLAGS = -D__HIP_PLATFORM_NVCC__
+	HIPFLAGS = -D__HIP_PLATFORM_HCC__
 endif
 
 build/src/%.o: src/%.cc
@@ -218,15 +218,24 @@ build/src/%.o: src/%.cc
 
 build/src/%_gpu.o: src/%.cu
 	@mkdir -p $(@D)
-	$(NVCC) $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler "$(CFLAGS)" -M -MT build/src/$*_gpu.o $< >build/src/$*_gpu.d
-	$(NVCC) -c -o $@ $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler "$(CFLAGS)" $<
+	$(NVCC) -std=c++11 -Xclang "$(CFLAGS)" -M -MT build/src/$*_gpu.o $< >build/src/$*_gpu.d
+	$(NVCC) -std=c++11 -c -o $@  -Xclang "$(CFLAGS) -fdiagnostics-show-template-tree" $<
+
+src/%_hip.cpp: src/%.cu
+	cp $< $@
+
+build/src/%_hip_gpu.o: src/%_hip.cpp
+	@mkdir -p $(@D)
+	#$(CXX) -std=c++11 -c $(HIPFLAGS) -Isrc/operator $(CFLAGS) -MT -c $< -o $@
+	$(CXX) -std=c++11 -c -o $@ $(HIPFLAGS) -Isrc/operator "$(CFLAGS)" -MMD $<
+
 
 # A nvcc bug cause it to generate "generic/xxx.h" dependencies from torch headers.
 # Use CXX to generate dependency instead.
 build/plugin/%_gpu.o: plugin/%.cu
 	@mkdir -p $(@D)
 	$(CXX) -std=c++11 $(CFLAGS) -MM -MT build/plugin/$*_gpu.o $< >build/plugin/$*_gpu.d
-	$(NVCC) -c -o $@ $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler "$(CFLAGS)" $<
+	$(NVCC) -std=c++11 -c -o $@ -Xclang "$(CFLAGS) -fdiagnostics-show-template-tree" $<
 
 build/plugin/%.o: plugin/%.cc
 	@mkdir -p $(@D)
@@ -234,8 +243,16 @@ build/plugin/%.o: plugin/%.cc
 
 %_gpu.o: %.cu
 	@mkdir -p $(@D)
-	$(NVCC) $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler "$(CFLAGS) -Isrc/operator" -M -MT $*_gpu.o $< >$*_gpu.d
-	$(NVCC) -c -o $@ $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler "$(CFLAGS) -Isrc/operator" $<
+	$(NVCC) -std=c++11 -Xclang "$(CFLAGS) -Isrc/operator" -M -MT $*_gpu.o $< >$*_gpu.d
+	$(NVCC) -std=c++11 -c -o $@ -Xclang "$(CFLAGS) -fdiagnostics-show-template-tree -Isrc/operator" $<
+
+%_hip.cpp: %.cu
+	cp $< $@
+
+%_hip_gpu.o: %_hip.cpp
+	@mkdir -p $(@D)
+#	$(CXX) -std=c++11 -D_FORCE_INLINES -c $(HIPFLAGS) -Isrc/operator $(CFLAGS) -M -MT -MMD -c $< -o $@
+	$(CXX) -std=c++11 -c -o $@ $(HIPFLAGS) -Isrc/operator "$(CFLAGS)" -MMD $<
 
 %.o: %.cc
 	@mkdir -p $(@D)

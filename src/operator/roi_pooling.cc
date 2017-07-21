@@ -39,10 +39,10 @@ inline void ROIPoolForward(const Tensor<cpu, 4, Dtype> &out,
   // For each ROI R = [batch_index x1 y1 x2 y2]: max pool over R
   for (int n = 0; n < num_rois; ++n) {
     int roi_batch_ind = bottom_rois[0];
-    int roi_start_w = round(bottom_rois[1] * spatial_scale_);
-    int roi_start_h = round(bottom_rois[2] * spatial_scale_);
-    int roi_end_w = round(bottom_rois[3] * spatial_scale_);
-    int roi_end_h = round(bottom_rois[4] * spatial_scale_);
+    int roi_start_w = round(bottom_rois[1] * Dtype(spatial_scale_));
+    int roi_start_h = round(bottom_rois[2] * Dtype(spatial_scale_));
+    int roi_end_w = round(bottom_rois[3] * Dtype(spatial_scale_));
+    int roi_end_h = round(bottom_rois[4] * Dtype(spatial_scale_));
     assert(roi_batch_ind >= 0);
     assert(roi_batch_ind < batch_size);
 
@@ -145,10 +145,10 @@ inline void ROIPoolBackwardAcc(const Tensor<cpu, 4, Dtype> &in_grad,
               continue;
             }
 
-            int roi_start_w = round(offset_bottom_rois[1] * spatial_scale_);
-            int roi_start_h = round(offset_bottom_rois[2] * spatial_scale_);
-            int roi_end_w = round(offset_bottom_rois[3] * spatial_scale_);
-            int roi_end_h = round(offset_bottom_rois[4] * spatial_scale_);
+            int roi_start_w = round(offset_bottom_rois[1] * Dtype(spatial_scale_));
+            int roi_start_h = round(offset_bottom_rois[2] * Dtype(spatial_scale_));
+            int roi_end_w = round(offset_bottom_rois[3] * Dtype(spatial_scale_));
+            int roi_end_h = round(offset_bottom_rois[4] * Dtype(spatial_scale_));
 
             bool in_roi = (w >= roi_start_w && w <= roi_end_w &&
                            h >= roi_start_h && h <= roi_end_h);

@@ -9,6 +9,12 @@
 #include <hipblas.h>
 #include <hiprng.h>
 
+
+
+#ifdef __HIPCC__
+ #define __launch_bounds__(...) 
+#endif
+
 typedef enum hipDataType_t
 {
     HIP_R_16F= 2,  /* real as a half */

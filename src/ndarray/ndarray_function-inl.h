@@ -36,7 +36,7 @@
   }
 #endif
 
-#if defined(__CUDACC__)
+#if defined(__HIPCC__)
 #define DEVICE gpu
 #else
 #define DEVICE cpu

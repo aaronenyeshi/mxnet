@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2017 by Contributors
@@ -16,7 +17,8 @@ namespace op {
 namespace mxnet_op {
 using namespace mshadow;
 
-#ifdef __CUDA_ARCH__
+//#ifdef __CUDA_ARCH__
+#if __HIP_DEVICE_COMPILE__
 __constant__ const float PI = 3.14159265358979323846;
 #else
 const float PI = 3.14159265358979323846;
@@ -24,7 +26,7 @@ using std::isnan;
 #endif
 
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
 #define CUDA_KERNEL_LOOP(i, n) \
   for (int i = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; \
       i < (n); \
@@ -38,7 +40,7 @@ inline int cuda_get_num_blocks(const int N) {
   using namespace mshadow::cuda;
   return std::min(kMaxGridNum, (N + kBaseThreadNum - 1) / kBaseThreadNum);
 }
-#endif  // __CUDACC__
+#endif  // __HIPCC__
 
 
 /*! \brief operator request type switch */
@@ -191,7 +193,7 @@ struct Kernel<OP, cpu> {
 };
 
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
 template<typename OP, typename ...Args>
 __global__ void mxnet_generic_kernel(int N, Args... args) {
   for (int i = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; i < N; i += hipBlockDim_x * hipGridDim_x) {
@@ -206,12 +208,10 @@ struct Kernel<OP, gpu> {
   inline static void Launch(mshadow::Stream<gpu> *s, int N, Args... args) {
     using namespace mshadow::cuda;
     int ngrid = std::min(kMaxGridNum, (N + kBaseThreadNum - 1) / kBaseThreadNum);
-    mxnet_generic_kernel<OP, Args...>
-      <<<ngrid, kBaseThreadNum, 0, mshadow::Stream<gpu>::GetStream(s)>>>(
-        N, args...);
+    //hipLaunchKernel(HIP_KERNEL_NAME(mxnet_generic_kernel<OP, Args...>), dim3(ngrid), dim3(kBaseThreadNum), 0, mshadow::Stream<gpu>::GetStream(s),N, args...); //TODO HIP 
   }
 };
-#endif  // __CUDACC__
+#endif  // __HIPCC__
 
 
 }  // namespace mxnet_op

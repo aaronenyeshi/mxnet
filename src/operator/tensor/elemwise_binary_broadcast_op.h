@@ -15,7 +15,7 @@
 #include "../elemwise_op_common.h"
 #include "./elemwise_binary_op.h"
 #include "../operator_common.h"
-#include "broadcast_reduce-inl.h"
+#include "./broadcast_reduce-inl.h"
 
 namespace mxnet {
 namespace op {
@@ -131,8 +131,7 @@ void BinaryBroadcastCompute(const nnvm::NodeAttrs& attrs,
     mshadow::Stream<xpu> *s = ctx.get_stream<xpu>();
     MSHADOW_TYPE_SWITCH(outputs[0].type_flag_, DType, {
       BROADCAST_NDIM_SWITCH(ndim, NDim, {
-        BinaryBroadcastComputeImpl<NDim, DType, OP>(s, req[0], inputs[0].reshape(new_lshape),
-          inputs[1].reshape(new_rshape), outputs[0].reshape(new_oshape));
+        BinaryBroadcastComputeImpl<NDim, DType, OP>(s, req[0], inputs[0].reshape(new_lshape), inputs[1].reshape(new_rshape), outputs[0].reshape(new_oshape));
       });
     });
   }

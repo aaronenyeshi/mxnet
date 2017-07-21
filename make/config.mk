@@ -21,8 +21,8 @@
 #--------------------
 
 export CC = gcc
-export CXX = g++
-export NVCC = nvcc
+export CXX = hipcc
+export NVCC = hipcc
 
 # whether compile with options for MXNet developer
 DEV = 0
@@ -44,12 +44,12 @@ ADD_CFLAGS =
 #---------------------------------------------
 
 # whether use CUDA during compile
-USE_CUDA = 0
+USE_CUDA = 1
 
 # add the path to CUDA library to link and compile flag
 # if you have already add them to environment variable, leave it as NONE
-# USE_CUDA_PATH = /usr/local/cuda
-USE_CUDA_PATH = NONE
+USE_CUDA_PATH = /usr/local/cuda
+#USE_CUDA_PATH = NONE
 
 # whether use CuDNN R3 library
 USE_CUDNN = 0
@@ -70,7 +70,7 @@ USE_NVRTC = 0
 USE_OPENCV = 1
 
 # use openmp for parallelization
-USE_OPENMP = 1
+USE_OPENMP = 0
 
 
 # MKL ML Library for Intel CPU/Xeon Phi

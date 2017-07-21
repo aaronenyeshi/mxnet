@@ -6,9 +6,10 @@
 */
 #ifndef MXNET_OPERATOR_TENSOR_INDEXING_OP_CUH_
 #define MXNET_OPERATOR_TENSOR_INDEXING_OP_CUH_
+#ifdef USE_CUB
 #include <cub/device/device_run_length_encode.cuh>
 #include <cub/device/device_scan.cuh>
-
+#endif
 namespace mxnet {
 namespace op {
 const int kWarpSize = 32;
@@ -24,7 +25,7 @@ __global__ void AddTakeGradLargeBatchKernel(DType* dst,
                                            const DType *src,
                                            int ymax, int xmax) {
   // Size of the shared memory is [hipBlockDim_x*SZ*hipBlockDim_y]*sizeof(DType)
-  extern __shared__ char sh_grad_weight_char[];
+  HIP_DYNAMIC_SHARED( char, sh_grad_weight_char)
   DType* sh_grad_weight = (DType*)sh_grad_weight_char;
 
   int iidx_end = (idx_start == NULL) ? ymax : *idx_start_size_ptr;
@@ -162,11 +163,15 @@ template <typename IndexType, typename xpu>
 inline typename std::enable_if<std::is_same<xpu, gpu>::value, size_t>::type
 AddTakeGradLargeBatchWorkspaceSize(size_t num_keys) {
   size_t encode_bytes = 0;
+#ifdef USE_CUB
   cub::DeviceRunLengthEncode::Encode<IndexType*, IndexType*, IndexType*, int*>
     (NULL, encode_bytes, NULL, NULL, NULL, NULL, num_keys);
+#endif
   size_t exclusivesum_bytes = 0;
+#ifdef USE_CUB
   cub::DeviceScan::ExclusiveSum<IndexType*, IndexType*>(NULL, exclusivesum_bytes,
     NULL, NULL, num_keys);
+#endif
   size_t temporary_bytes = std::max(encode_bytes, exclusivesum_bytes);
   size_t unique_bytes = num_keys*sizeof(IndexType);
   size_t counts_bytes = num_keys*sizeof(IndexType);
@@ -197,11 +202,15 @@ inline void AddTakeGradLargeBatch(mshadow::Tensor<gpu, 2, DType> dst,
     size_t num_runs_bytes = 1*sizeof(int);
 
     size_t encode_bytes = 0;
+#ifdef USE_CUB
     cub::DeviceRunLengthEncode::Encode<IndexType*, IndexType*, IndexType*, int*>
       (NULL, encode_bytes, NULL, NULL, NULL, NULL, sorted.size(0), stream);
+#endif
     size_t exclusivesum_bytes = 0;
+#ifdef USE_CUB
     cub::DeviceScan::ExclusiveSum<IndexType*, IndexType*>
       (NULL, exclusivesum_bytes, NULL, NULL, sorted.size(0), stream);
+#endif
     size_t temporary_bytes = std::max(encode_bytes, exclusivesum_bytes);
 
     // Check that we have enough storage
@@ -215,14 +224,18 @@ inline void AddTakeGradLargeBatch(mshadow::Tensor<gpu, 2, DType> dst,
     void* temporary_storage = reinterpret_cast<void *>(workspace->dptr_ + unique_bytes +
       counts_bytes + num_runs_bytes);
 
+#ifdef USE_CUB
     cub::DeviceRunLengthEncode::Encode<IndexType*, IndexType*, IndexType*, int*>
     (temporary_storage, temporary_bytes, sorted.dptr_, unique_out_ptr, counts_out_ptr,
       num_runs_ptr, sorted.size(0), stream);
+#endif
 
     sum_counts_ptr = unique_out_ptr;
+#ifdef USE_CUB
     cub::DeviceScan::ExclusiveSum<IndexType*, IndexType*>
     (temporary_storage, temporary_bytes, counts_out_ptr, sum_counts_ptr,
       sorted.size(0), stream);
+#endif
   }
 
   const int num_unique_est = min(dst.size(0), src.size(0));
@@ -244,33 +257,25 @@ inline void AddTakeGradLargeBatch(mshadow::Tensor<gpu, 2, DType> dst,
 
   switch (SZ) {
     case 1:
-    AddTakeGradLargeBatchKernel<1, DType>
-        <<<dimGrid, dimBlock, shmem_size, stream>>>
-        (dst.dptr_, sum_counts_ptr, num_runs_ptr,
+    hipLaunchKernel(HIP_KERNEL_NAME(AddTakeGradLargeBatchKernel<1, DType>), dim3(dimGrid), dim3(dimBlock), shmem_size, stream, dst.dptr_, sum_counts_ptr, num_runs_ptr,
          sorted.dptr_, index.dptr_, src.dptr_,
          static_cast<int>(src.size(0)),
          static_cast<int>(src.size(1)));
     break;
     case 2:
-    AddTakeGradLargeBatchKernel<2, DType>
-        <<<dimGrid, dimBlock, shmem_size, stream>>>
-        (dst.dptr_, sum_counts_ptr, num_runs_ptr,
+    hipLaunchKernel(HIP_KERNEL_NAME(AddTakeGradLargeBatchKernel<2, DType>), dim3(dimGrid), dim3(dimBlock), shmem_size, stream, dst.dptr_, sum_counts_ptr, num_runs_ptr,
          sorted.dptr_, index.dptr_, src.dptr_,
          static_cast<int>(src.size(0)),
          static_cast<int>(src.size(1)));
     break;
     case 3:
-    AddTakeGradLargeBatchKernel<3, DType>
-        <<<dimGrid, dimBlock, shmem_size, stream>>>
-        (dst.dptr_, sum_counts_ptr, num_runs_ptr,
+    hipLaunchKernel(HIP_KERNEL_NAME(AddTakeGradLargeBatchKernel<3, DType>), dim3(dimGrid), dim3(dimBlock), shmem_size, stream, dst.dptr_, sum_counts_ptr, num_runs_ptr,
          sorted.dptr_, index.dptr_, src.dptr_,
          static_cast<int>(src.size(0)),
          static_cast<int>(src.size(1)));
     break;
     case 4:
-    AddTakeGradLargeBatchKernel<4, DType>
-        <<<dimGrid, dimBlock, shmem_size, stream>>>
-        (dst.dptr_, sum_counts_ptr, num_runs_ptr,
+    hipLaunchKernel(HIP_KERNEL_NAME(AddTakeGradLargeBatchKernel<4, DType>), dim3(dimGrid), dim3(dimBlock), shmem_size, stream, dst.dptr_, sum_counts_ptr, num_runs_ptr,
          sorted.dptr_, index.dptr_, src.dptr_,
          static_cast<int>(src.size(0)),
          static_cast<int>(src.size(1)));

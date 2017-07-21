@@ -37,10 +37,10 @@ namespace mshadow {
       const index_t k = static_cast<int>(label[y]);
       for (index_t x = 0; x < dst.size(1); x++) {
         if (x == k) {
-          dst[y][k] = margin > src[y][k] ?  2*(margin - src[y][k]) : DType(0.0f);
+          dst[y][k] = margin > src[y][k] ?  DType(2)*(margin - src[y][k]) : DType(0.0f);
           dst[y][k] *= -reg_coef;
         } else {
-          dst[y][x] = margin > -src[y][x] ? (-2)*(margin + src[y][x]) : DType(0.0f);
+          dst[y][x] = margin > -src[y][x] ? DType(-2)*(margin + src[y][x]) : DType(0.0f);
           dst[y][x] *= -reg_coef;
         }
       }

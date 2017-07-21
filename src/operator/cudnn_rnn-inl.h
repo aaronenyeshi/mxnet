@@ -17,7 +17,7 @@
 
 namespace mxnet {
 namespace op {
-#if defined(__CUDACC__) && MXNET_USE_CUDNN == 1 && CUDNN_MAJOR >= 5
+#if defined(__HIPCC__) && MXNET_USE_CUDNN == 1 && CUDNN_MAJOR >= 5
 template<typename DType>
 class CuDNNRNNOp : public Operator {
  public:
@@ -541,7 +541,7 @@ class CuDNNRNNOp : public Operator {
   #endif
   RNNParam param_;
 };
-#endif  // __CUDACC__ && CUDNN
+#endif  // __HIPCC__ && CUDNN
 }  // namespace op
 }  // namespace mxnet
 

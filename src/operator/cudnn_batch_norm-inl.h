@@ -25,7 +25,7 @@ enum CuDNNBatchNormOpOutputs {kOut, kMean, kInvVar};
 enum CuDNNBatchNormOpAuxiliary {kMovingMean, kMovingInvVar};
 }  // namespace cudnnbatchnorm
 
-#if defined(__CUDACC__)
+#if defined(__HIPCC__)
 template<typename DType>
 class CuDNNBatchNormOp : public Operator {
  public:
@@ -270,7 +270,7 @@ class CuDNNBatchNormOp : public Operator {
   mshadow::Shape<4> shape_;
   BatchNormParam param_;
 };
-#endif  // defined(__CUDACC__)
+#endif  // defined(__HIPCC__)
 
 template<typename xpu>
 Operator *CreateOp_CuDNNv4(BatchNormParam param);

@@ -77,8 +77,8 @@ inline void BilinearSamplerBackward(const Tensor<cpu, 4, DType> &gdata,
           DType top_left_y_gw = 0.0;
           DType top_left_x_gw = 0.0;
           index_t grid_src_index = n * o_h * o_w * 2 + h * o_w + w;
-          DType y_real = (*(grid_src + grid_src_index + o_h * o_w) + 1) * (i_h - 1) / 2;
-          DType x_real = (*(grid_src + grid_src_index) + 1) * (i_w - 1) / 2;
+          DType y_real = (*(grid_src + grid_src_index + o_h * o_w) + 1) * DType((i_h - 1) / 2);
+          DType x_real = (*(grid_src + grid_src_index) + 1) * DType((i_w - 1) / 2);
           int top_left_y = static_cast<int>(floor(y_real));
           int top_left_x = static_cast<int>(floor(x_real));
           DType top_left_y_w = 1.0 - (y_real - top_left_y);
@@ -121,8 +121,8 @@ inline void BilinearSamplerBackward(const Tensor<cpu, 4, DType> &gdata,
                               * top_left_y_w);
           }
           // calc grad of grid
-          *(grad_grid + grid_src_index + o_h * o_w) += top_left_y_gw * (i_h - 1) / 2;
-          *(grad_grid + grid_src_index) += top_left_x_gw * (i_w - 1) / 2;
+          *(grad_grid + grid_src_index + o_h * o_w) += top_left_y_gw * DType((i_h - 1) / 2);
+          *(grad_grid + grid_src_index) += top_left_x_gw * DType((i_w - 1) / 2);
         }
       }
     }
