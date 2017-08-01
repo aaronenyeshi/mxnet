@@ -121,7 +121,8 @@ class ConvolutionV1Op : public Operator {
     Tensor<xpu, 3, DType> wmat =
         in_data[conv_v1::kWeight].get_with_shape<xpu, 3, DType>(wmat_shape, s);
     Tensor<xpu, 4, DType> out = out_data[conv_v1::kOut].get<xpu, 4, DType>(s);
-#if defined(__HIPCC__)
+//#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
+#if defined(__CUDACC__)
     CHECK_EQ(s->blas_handle_ownership_, Stream<xpu>::OwnHandle)
         << "Must init CuBLAS handle in stream";
 #endif
@@ -208,7 +209,7 @@ class ConvolutionV1Op : public Operator {
     Tensor<xpu, 4, DType> gdata = in_grad[conv_v1::kData].get<xpu, 4, DType>(s);
     Tensor<xpu, 3, DType> gwmat =
         in_grad[conv_v1::kWeight].get_with_shape<xpu, 3, DType>(wmat_shape, s);
-#if defined(__HIPCC__)
+#if defined(__CUDACC__)
     CHECK_EQ(s->blas_handle_ownership_, Stream<xpu>::OwnHandle)
         << "Must init CuBLAS handle in stream";
 #endif

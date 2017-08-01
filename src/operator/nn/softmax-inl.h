@@ -107,6 +107,7 @@ inline void SoftmaxGrad(Stream<cpu> *s, DType *out, DType *ograd,
 
 
 #ifdef __HIPCC__
+
 template<int x_bits, typename OP, typename DType, int ndim>
 __global__ void softmax_compute_kernel(DType *in, DType *out, index_t M, int axis,
                                        Shape<ndim> sshape, Shape<ndim> stride) {

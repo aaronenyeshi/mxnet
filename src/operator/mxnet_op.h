@@ -1,4 +1,3 @@
-#include "hip/hip_runtime.h"
 #include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2017 by Contributors
@@ -17,7 +16,6 @@ namespace op {
 namespace mxnet_op {
 using namespace mshadow;
 
-//#ifdef __CUDA_ARCH__
 #if __HIP_DEVICE_COMPILE__
 __constant__ const float PI = 3.14159265358979323846;
 #else

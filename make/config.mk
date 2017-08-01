@@ -21,7 +21,7 @@
 #--------------------
 
 export CC = gcc
-export CXX = hipcc
+export CXX = g++
 export NVCC = hipcc
 
 # whether compile with options for MXNet developer
@@ -70,7 +70,7 @@ USE_NVRTC = 0
 USE_OPENCV = 1
 
 # use openmp for parallelization
-USE_OPENMP = 0
+USE_OPENMP = 1
 
 
 # MKL ML Library for Intel CPU/Xeon Phi

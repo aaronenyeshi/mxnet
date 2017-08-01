@@ -1694,7 +1694,8 @@ void ReverseOpForward(const nnvm::NodeAttrs& attrs,
     reverse_index++;
   }
 
-#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
+//#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
+#if defined(__CUDACC__) //TODO
 
   mshadow::Tensor<xpu, 1, uint8_t> workspace =
     ctx.requested[0].get_space_typed<xpu, 1, uint8_t>(
@@ -1711,7 +1712,8 @@ void ReverseOpForward(const nnvm::NodeAttrs& attrs,
                   hipMemcpyHostToDevice, mshadow::Stream<gpu>::GetStream(s));
 #endif
 
-#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
+//#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
+#if defined(__CUDACC__) //TODO
   MSHADOW_TYPE_SWITCH(outputs[0].type_flag_, DType, {
     Kernel<reverse, xpu>::Launch(s, inputs[0].Size(), reverse_index,
     inputs[0].dptr<DType>(), outputs[0].dptr<DType>(),

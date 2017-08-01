@@ -118,7 +118,7 @@ inline void MultiBoxDetectionForward(const Tensor<cpu, 3, DType> &out,
     for (int i = 0; i < valid_count; ++i) {
       sorter.push_back(SortElemDescend<DType>(p_out[i * 6 + 1], i));
     }
-    std::stable_sort(sorter.begin(), sorter.end());
+    std::stable_sort(sorter.begin(), sorter.end()); //TODO .TO fix type conversion error
     // re-order output
     DType *ptemp = temp_space.dptr_ + nbatch * num_anchors * 6;
     int nkeep = static_cast<int>(sorter.size());
