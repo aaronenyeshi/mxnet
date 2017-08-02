@@ -188,7 +188,7 @@ ALL_DEP = $(OBJ) $(EXTRA_OBJ) $(PLUGIN_OBJ) $(LIB_DEP)
 ifeq ($(USE_CUDA), 1)
 #	CFLAGS += -I$(ROOTDIR)/cub-hip
 	ALL_DEP += $(CUOBJ) $(EXTRA_CUOBJ) $(PLUGIN_CUOBJ)
-	LDFLAGS += -L/opt/rocm/hip/lib -lhip_hcc -L/opt/rocm/hcblas/lib -lhcblas -lhipblas_hcc -L/opt/rocm/hcrng/lib -lhiprng_hcc
+	LDFLAGS += -L/opt/rocm/hip/lib -lhip_hcc -L/opt/rocm/hcblas/lib -lhcblas -lhipblas_hcc -L/opt/rocm/hcrng/lib -lhcrng -lhiprng_hcc -L/opt/rocm/hcfft/lib -lhcfft -lhipfft_hcc
 	LDFLAGS += -lcudart -lcuda -lcufft
 	SCALA_PKG_PROFILE := $(SCALA_PKG_PROFILE)-gpu
 else
@@ -216,7 +216,7 @@ build/%_gpu.o: %.cu
 	@mkdir -p $(@D)
 #	$(NVCC) -std=c++11 "$(CFLAGS)" -M -MT build/src/$*_gpu.o $< >build/src/$*_gpu.d
 #	$(NVCC) -std=c++11 -c -o $@  "$(CFLAGS)" $<
-	$(NVCC) $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler \"$(CFLAGS)\" -M -MT build/src/$*_gpu.o $< >build/src/$*_gpu.d
+	$(NVCC) $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler \"$(CFLAGS)\" -M -MT build/$*_gpu.o $< >build/$*_gpu.d
 	$(NVCC) -c -o $@ $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler \"$(CFLAGS)\" $<
 
 
