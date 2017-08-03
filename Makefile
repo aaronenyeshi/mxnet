@@ -49,8 +49,8 @@ ifeq ($(DEBUG), 1)
 else
 	CFLAGS += -O3
 endif
-HIPINCLUDES = -I. -I/opt/rocm/include -I/opt/rocm/hcblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include/
-CFLAGS += $(CLANGINCLUDES) $(HIPINCLUDES) -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
+HIPINCLUDES +=  -I. -I/opt/rocm/include -I/opt/rocm/hcblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include
+CFLAGS += $(HIPINCLUDES) -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
 LDFLAGS = -pthread $(MSHADOW_LDFLAGS) $(DMLC_LDFLAGS)
 ifeq ($(DEBUG), 1)
 	NVCCFLAGS = -std=c++11 -Xcompiler -D_FORCE_INLINES -g -G -O0 -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
@@ -204,8 +204,13 @@ ifeq ($(USE_NVRTC), 1)
 else
 	CFLAGS += -DMXNET_USE_NVRTC=0
 endif
+
+ifeq ($(HIP_PLATFORM), hcc)
+	CXX = hipcc
+endif
+
 ifeq ($(CXX), g++)
-	HIPFLAGS = -D__HIP_PLATFORM_NVCC__
+	HIPFLAGS = -D__NVCC__
 endif
 
 build/src/%.o: src/%.cc
