@@ -19,14 +19,15 @@ namespace mxnet {
 namespace op {
 #if MXNET_USE_CUDNN == 1
 
+#include <miopen/miopen.h>
 class CuDNNAlgoReg {
  public:
   template <typename Param>
   std::string GetKey(const Param &param, const std::vector<TShape> &in_shape,
                      const std::vector<TShape> &out_shape,
-                     cudnnDataType_t cudnn_data_type,
-                     cudnnDataType_t cudnn_forward_compute_type,
-                     cudnnDataType_t cudnn_backward_compute_type) {
+                     miopenDataType_t cudnn_data_type,
+                     miopenDataType_t cudnn_forward_compute_type,
+                     miopenDataType_t cudnn_backward_compute_type) {
     std::ostringstream oss;
     oss << "inputs=";
     for (auto &i : in_shape)
@@ -43,9 +44,9 @@ class CuDNNAlgoReg {
     return oss.str();
   }
 
-  bool Find(std::string key, cudnnConvolutionFwdAlgo_t *fwd,
-            cudnnConvolutionBwdDataAlgo_t *bwd,
-            cudnnConvolutionBwdFilterAlgo_t *flt) {
+  bool Find(std::string key, miopenConvFwdAlgorithm_t *fwd,
+            miopenConvBwdDataAlgorithm_t *bwd,
+            miopenConvBwdWeightsAlgorithm_t *flt) {
     std::lock_guard<std::mutex> guard(lock_);
     auto i = reg_.find(key);
     if (i != reg_.end()) {
@@ -57,9 +58,9 @@ class CuDNNAlgoReg {
     return false;
   }
 
-  void Register(std::string key, cudnnConvolutionFwdAlgo_t fwd,
-                cudnnConvolutionBwdDataAlgo_t bwd,
-                cudnnConvolutionBwdFilterAlgo_t flt) {
+  void Register(std::string key, miopenConvFwdAlgorithm_t fwd,
+                miopenConvBwdDataAlgorithm_t bwd,
+                miopenConvBwdWeightsAlgorithm_t flt) {
     std::lock_guard<std::mutex> guard(lock_);
     if (reg_.size() % 50 == 0) {
       LOG(INFO) << "Running performance tests to find the best convolution "
@@ -82,9 +83,9 @@ class CuDNNAlgoReg {
 
  private:
   struct CudnnAlgorithms {
-    cudnnConvolutionFwdAlgo_t fwd;
-    cudnnConvolutionBwdDataAlgo_t bwd;
-    cudnnConvolutionBwdFilterAlgo_t flt;
+    miopenConvFwdAlgorithm_t fwd;
+    miopenConvBwdDataAlgorithm_t bwd;
+    miopenConvBwdWeightsAlgorithm_t flt;
   };
 
   std::mutex lock_;

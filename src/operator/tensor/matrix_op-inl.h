@@ -1639,16 +1639,16 @@ struct reverse {
     }
     return outputIndex;
   }
-#ifdef __CUDACC__
+#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
   template<typename DType>
   __device__  static void Map(int index, index_t nreversedim, const DType *src, DType *dst,
                               const index_t * stride_,
                               const index_t * trailing_) {
     __shared__ index_t stride_share[REVERSE_MAX_DIM];
     __shared__ index_t trailing_share[REVERSE_MAX_DIM];
-    if (threadIdx.x < REVERSE_MAX_DIM) {
-      stride_share[threadIdx.x] = stride_[threadIdx.x];
-      trailing_share[threadIdx.x] = trailing_[threadIdx.x];
+    if (hipThreadIdx_x < REVERSE_MAX_DIM) {
+      stride_share[hipThreadIdx_x] = stride_[hipThreadIdx_x];
+      trailing_share[hipThreadIdx_x] = trailing_[hipThreadIdx_x];
     }
     __syncthreads();
     index_t new_idx = ReverseIndex(index, nreversedim, stride_share, trailing_share);
@@ -1694,7 +1694,9 @@ void ReverseOpForward(const nnvm::NodeAttrs& attrs,
     reverse_index++;
   }
 
-#ifdef __CUDACC__
+//#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
+#if defined(__CUDACC__) //TODO
+
   mshadow::Tensor<xpu, 1, uint8_t> workspace =
     ctx.requested[0].get_space_typed<xpu, 1, uint8_t>(
       mshadow::Shape1(reverse_index * sizeof(index_t) * 2), s);
@@ -1702,16 +1704,16 @@ void ReverseOpForward(const nnvm::NodeAttrs& attrs,
   auto stride_workspace = workspace.dptr_;
   auto trailing_workspace = workspace.dptr_ + reverse_index * sizeof(index_t);
 
-  cudaMemcpyAsync(stride_workspace, thrust::raw_pointer_cast(stride_.data()),
+  hipMemcpyAsync(stride_workspace, thrust::raw_pointer_cast(stride_.data()),
                   stride_.size() * sizeof(index_t),
-                  cudaMemcpyHostToDevice, mshadow::Stream<gpu>::GetStream(s));
-  cudaMemcpyAsync(trailing_workspace, thrust::raw_pointer_cast(trailing_.data()),
+                  hipMemcpyHostToDevice, mshadow::Stream<gpu>::GetStream(s));
+  hipMemcpyAsync(trailing_workspace, thrust::raw_pointer_cast(trailing_.data()),
                   trailing_.size() * sizeof(index_t),
-                  cudaMemcpyHostToDevice, mshadow::Stream<gpu>::GetStream(s));
-
+                  hipMemcpyHostToDevice, mshadow::Stream<gpu>::GetStream(s));
 #endif
 
-#ifdef __CUDACC__
+//#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
+#if defined(__CUDACC__) //TODO
   MSHADOW_TYPE_SWITCH(outputs[0].type_flag_, DType, {
     Kernel<reverse, xpu>::Launch(s, inputs[0].Size(), reverse_index,
     inputs[0].dptr<DType>(), outputs[0].dptr<DType>(),

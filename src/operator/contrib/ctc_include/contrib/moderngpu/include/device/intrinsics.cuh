@@ -111,7 +111,8 @@ MGPU_DEVICE uint prmt_ptx(uint a, uint b, uint index) {
 __device__ __forceinline__ float shfl_up(float var,
 	unsigned int delta, int width = 32) {
 
-#if __CUDA_ARCH__ >= 300
+//#if __CUDA_ARCH__ >= 300
+#if __HIP_ARCH_HAS_WARP_SHUFFLE__
 	var = __shfl_up(var, delta, width);
 #endif
 	return var;
@@ -120,7 +121,8 @@ __device__ __forceinline__ float shfl_up(float var,
 __device__ __forceinline__ double shfl_up(double var,
 	unsigned int delta, int width = 32) {
 
-#if __CUDA_ARCH__ >= 300
+//#if __CUDA_ARCH__ >= 300
+#if __HIP_ARCH_HAS_WARP_SHUFFLE__
 	int2 p = mgpu::double_as_int2(var);
 	p.x = __shfl_up(p.x, delta, width);
 	p.y = __shfl_up(p.y, delta, width);
@@ -135,7 +137,9 @@ __device__ __forceinline__ double shfl_up(double var,
 
 MGPU_DEVICE int shfl_add(int x, int offset, int width = WARP_SIZE) {
 	int result = 0;
-#if __CUDA_ARCH__ >= 300
+//#if __CUDA_ARCH__ >= 300
+#if __HIP_ARCH_HAS_WARP_SHUFFLE__
+
 	int mask = (WARP_SIZE - width)<< 8;
 	asm(
 		"{.reg .s32 r0;"
@@ -150,7 +154,8 @@ MGPU_DEVICE int shfl_add(int x, int offset, int width = WARP_SIZE) {
 
 MGPU_DEVICE int shfl_max(int x, int offset, int width = WARP_SIZE) {
 	int result = 0;
-#if __CUDA_ARCH__ >= 300
+//if __CUDA_ARCH__ >= 300
+#if __HIP_ARCH_HAS_WARP_SHUFFLE__
 	int mask = (WARP_SIZE - width)<< 8;
 	asm(
 		"{.reg .s32 r0;"
@@ -260,7 +265,8 @@ MGPU_HOST_DEVICE int FindLog2(int x, bool roundUp = false) {
 ////////////////////////////////////////////////////////////////////////////////
 // vset4
 
-#if __CUDA_ARCH__ >= 300
+//#if __CUDA_ARCH__ >= 300
+#if __HIP_ARCH_HAS_WARP_SHUFFLE__
 
 // Performs four byte-wise comparisons and returns 1 for each byte that
 // satisfies the conditional, and zero otherwise.
@@ -280,7 +286,8 @@ MGPU_DEVICE uint vset4_eq_ptx(uint a, uint b) {
 
 MGPU_HOST_DEVICE uint vset4_lt_add(uint a, uint b, uint c) {
 	uint result;
-#if __CUDA_ARCH__ >= 300
+//#if __CUDA_ARCH__ >= 300
+#if __HIP_ARCH_HAS_WARP_SHUFFLE__
 	result = vset4_lt_add_ptx(a, b, c);
 #else
 	result = c;
@@ -294,7 +301,8 @@ MGPU_HOST_DEVICE uint vset4_lt_add(uint a, uint b, uint c) {
 
 MGPU_HOST_DEVICE uint vset4_eq(uint a, uint b) {
 	uint result;
-#if __CUDA_ARCH__ >= 300
+//#if __CUDA_ARCH__ >= 300
+#if __HIP_ARCH_HAS_WARP_SHUFFLE__
 	result = vset4_eq_ptx(a, b);
 #else
 	result = 0;

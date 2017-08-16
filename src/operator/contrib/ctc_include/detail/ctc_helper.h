@@ -23,6 +23,12 @@ namespace ctc_helper {
 
 static const float threshold = 1e-1;
 
+#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1) //TODO not defined for __device__
+
+__device__ float __builtin_inff() { return 0.0; }
+
+#endif
+
 template<typename T>
 HOSTDEVICE
 T neg_inf() { return -T(INFINITY); }

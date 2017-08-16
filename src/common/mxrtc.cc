@@ -36,7 +36,7 @@ void MXRtc::push(std::vector<NDArray> const& input,
     CHECK_EQ(num_input_, input.size());
     CHECK_EQ(num_output_, output.size());
     CHECK(output.size());
-    cudaError_enum err;
+    hipError_enum err;
     CUfunction func;
     int dev_id = output[0].ctx().dev_id;
     if (func_.find(dev_id) != func_.end()) {
@@ -58,15 +58,15 @@ void MXRtc::push(std::vector<NDArray> const& input,
         for (auto& i : output) float_args.push_back(static_cast<float*>(i.data().dptr_));
         std::vector<void*> args;
         for (auto& i : float_args) args.push_back(&i);
-        cudaError_enum err;
-        cudaError_t cuerr;
+        hipError_enum err;
+        hipError_t cuerr;
         CHECK_EQ(err = cuLaunchKernel(func,
                                 grid_dim_X, grid_dim_Y, grid_dim_Z,
                                 block_dim_X, block_dim_Y, block_dim_Z,
                                 0, rctx.get_stream<mshadow::gpu>()->stream_,
                                 args.data(), 0), CUDA_SUCCESS) << "CudaError: " << err;
-        CHECK_EQ(cuerr = cudaStreamSynchronize(rctx.get_stream<mshadow::gpu>()->stream_),
-                 cudaSuccess) << "CudaError: " << cuerr;
+        CHECK_EQ(cuerr = hipStreamSynchronize(rctx.get_stream<mshadow::gpu>()->stream_),
+                 hipSuccess) << "CudaError: " << cuerr;
     };
     std::vector<Engine::VarHandle> var_in, var_out;
     for (auto& i : input) var_in.push_back(i.var());

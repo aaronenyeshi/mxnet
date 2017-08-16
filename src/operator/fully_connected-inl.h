@@ -66,10 +66,11 @@ class FullyConnectedOp : public Operator {
     // maybe need blas handle from context
     // TODO(bing): judge shape to remove flatten op
     Stream<xpu> *s = ctx.get_stream<xpu>();
+//#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
 #if defined(__CUDACC__)
     CHECK_EQ(s->blas_handle_ownership_, Stream<xpu>::OwnHandle)
         << "Must init CuBLAS handle in stream";
-#endif  // __CUDACC__
+#endif  // __HIPCC__
     const TShape& ishape = in_data[fullc::kData].shape_;
     const TShape& oshape = out_data[fullc::kOut].shape_;
 
@@ -110,6 +111,7 @@ class FullyConnectedOp : public Operator {
     Tensor<xpu, 2, DType> grad = out_grad[fullc::kOut].get_with_shape<xpu, 2, DType>(
         Shape2(oshape[0], oshape.ProdShape(1, oshape.ndim())), s);
 
+//#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
 #if defined(__CUDACC__)
     CHECK_EQ(s->blas_handle_ownership_, Stream<xpu>::OwnHandle)
         << "Must init CuBLAS handle in stream";

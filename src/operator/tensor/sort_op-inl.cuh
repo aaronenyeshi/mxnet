@@ -7,9 +7,10 @@
 #define MXNET_OPERATOR_TENSOR_SORT_OP_INL_CUH_
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
-#if defined(_MSC_VER) && __CUDACC_VER__ != 80044
+#if !defined(USE_CUB) || (defined(_MSC_VER) && __CUDACC_VER__ != 80044)
 // Many CUDA compilers other than V8.0.44 crash on Windows 
-#pragma warning("Potential crash on CUDA compiler detected. Switching sorting from CUB to Thrust")
+//#pragma warning("Potential crash on CUDA compiler detected. Switching sorting from CUB to Thrust")
+#pragma warning("Switching sorting from CUB to Thrust")
 #define SORT_WITH_THRUST
 #else
 #include <cub/device/device_radix_sort.cuh>
@@ -44,7 +45,7 @@ inline void SortByKey(mshadow::Tensor<gpu, 1, KDType> keys, mshadow::Tensor<gpu,
   CHECK_EQ(keys.CheckContiguous(), true);
   CHECK_EQ(values.CheckContiguous(), true);
 #if CUDA_VERSION >= 7000
-  cudaStream_t stream = mshadow::Stream<gpu>::GetStream(keys.stream_);
+  hipStream_t stream = mshadow::Stream<gpu>::GetStream(keys.stream_);
 #ifndef SORT_WITH_THRUST
   if (workspace != NULL) {
     // Workspace given, sort using CUB

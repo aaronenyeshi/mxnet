@@ -1,3 +1,4 @@
+#include <hip/hip_runtime.h>
 /*!
  * Copyright [2016] <Contributors>
  * \file Correation.cu
@@ -16,13 +17,13 @@
 #define CORRELATION_CUDA_CHECK(condition) \
   /* Code block avoids redefinition of cudaError_t error */ \
   do { \
-    cudaError_t error = condition; \
-    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+    hipError_t error = condition; \
+    CHECK_EQ(error, hipSuccess) << " " << hipGetErrorString(error); \
   } while (0)
 #define CUDA_KERNEL_LOOP(i, n) \
-for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
+for (int i = hipBlockIdx_x* hipBlockDim_x + hipThreadIdx_x; \
       i < (n); \
-      i += blockDim.x * gridDim.x)
+      i += hipBlockDim_x * hipGridDim_x)
 namespace mshadow {
 namespace cuda {
 // == Correlation Kernel
@@ -37,10 +38,10 @@ __global__ void CorrelateData(const int nthreads, int num, int topwidth,
   Dtype *patch_data = reinterpret_cast<Dtype *>(patch_data_char);
   //  First (upper left) position of kernel upper-left corner
   //  in current center position of neighborhood in image 1
-  int x1 = blockIdx.x * stride1 + max_displacement;
-  int y1 = blockIdx.y * stride1 + max_displacement;
-  int item = blockIdx.z;
-  int ch_off = threadIdx.x;
+  int x1 = hipBlockIdx_x * stride1 + max_displacement;
+  int y1 = hipBlockIdx_y * stride1 + max_displacement;
+  int item = hipBlockIdx_z;
+  int ch_off = hipThreadIdx_x;
   //  Load 3D patch into shared shared memory
   for (int j = 0; j < kernel_size; j++) {  //  HEIGHT
     for (int i = 0; i < kernel_size; i++) {  //  WIDTH
@@ -80,7 +81,7 @@ __global__ void CorrelateData(const int nthreads, int num, int topwidth,
             total_sum += sum[idx];
         }
         const int sumelems = kernel_size * kernel_size * bottomchannels;
-        const int index = ((top_channel * topheight + blockIdx.y) * topwidth) + blockIdx.x;
+        const int index = ((top_channel * topheight + hipBlockIdx_y) * topwidth) + hipBlockIdx_x;
         top[index + item*topcount] = total_sum / static_cast<float>(sumelems);
     }  //  Aggregate result of  different threads
   }
@@ -398,11 +399,11 @@ template <typename Dtype>
 __global__ void blob_rearrange_kernel2(const Dtype* in, Dtype* out, int num,
 int channels, int width, int height, int widthheight, int padding, int pwidthheight) {
     //  change shape from [batchsize,channel,y,x] to [batchsize,y,x,channel]
-    int xy = blockIdx.x * blockDim.x + threadIdx.x;
+    int xy = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;
     if (xy >= widthheight )
         return;
-    int ch = blockIdx.y;
-    int n  = blockIdx.z;
+    int ch = hipBlockIdx_y;
+    int n  = hipBlockIdx_z;
     Dtype value = in[(n * channels + ch) * widthheight + xy];
     __syncthreads();
     int xpad  = (xy % width + padding);
@@ -420,8 +421,8 @@ void Forward_gpu(
       int top_channels_, int top_height_, int top_width_, int pad_size_,
       bool is_multiply, int max_displacement_, int kernel_size_,
       int neighborhood_grid_radius_, int neighborhood_grid_width_,
-      int  kernel_radius_, int stride1_, int stride2_, cudaStream_t stream,
-      cudaStream_t stream_tmp1, cudaStream_t stream_tmp2) {
+      int  kernel_radius_, int stride1_, int stride2_, hipStream_t stream,
+      hipStream_t stream_tmp1, hipStream_t stream_tmp2) {
     const Dtype *bottom_data1 = data1.dptr_;
     const Dtype *bottom_data2 = data2.dptr_;
     Dtype *rbot1 = tmp1.dptr_;
@@ -459,7 +460,7 @@ void Forward_gpu(
             stride1_, stride2_,
             width, height, channels,
             rbot1, rbot2, top);
-        CORRELATION_CUDA_CHECK(cudaPeekAtLastError());
+        CORRELATION_CUDA_CHECK(hipPeekAtLastError());
     } else {
         //  CorrelationLayer
         for (int n = 0; n < num; n++) {
@@ -472,7 +473,7 @@ void Forward_gpu(
                 max_displacement_, neighborhood_grid_radius_,
                 neighborhood_grid_width_, kernel_radius_,
                 stride1_, stride2_, width, height, channels, rbot1, rbot2, top);
-         CORRELATION_CUDA_CHECK(cudaPeekAtLastError());
+         CORRELATION_CUDA_CHECK(hipPeekAtLastError());
         }
     }
 }
@@ -488,7 +489,7 @@ void Backward_gpu(
       int max_displacement_, int kernel_size_,
       int neighborhood_grid_radius_, int neighborhood_grid_width_,
       int  kernel_radius_, int stride1_, int stride2_,
-      cudaStream_t stream0, cudaStream_t stream1,
+      hipStream_t stream0, hipStream_t stream1,
       int num, int channels, int height, int width) {
     //  Get top diff, compute bottom diff
     const Dtype* top_diff = out_grad.dptr_;
@@ -517,7 +518,7 @@ void Backward_gpu(
             stride1_, stride2_,
             width, height, paddedwidth, paddedheight, channels, bottomcount, pad_size_,
             bottom0_diff, rbot2, top_diff);
-        CORRELATION_CUDA_CHECK(cudaPeekAtLastError());
+        CORRELATION_CUDA_CHECK(hipPeekAtLastError());
         }
         //  == Run kernel Backward 1
         for (int n = 0; n < num; n++) {
@@ -528,7 +529,7 @@ void Backward_gpu(
             stride1_, stride2_,
             width, height, paddedwidth, paddedheight, channels, bottomcount, pad_size_,
             rbot1, bottom1_diff, top_diff);
-       CORRELATION_CUDA_CHECK(cudaPeekAtLastError());
+       CORRELATION_CUDA_CHECK(hipPeekAtLastError());
         }
     } else  {
         for (int n = 0; n < num; n++) {
@@ -540,7 +541,7 @@ void Backward_gpu(
             stride1_, stride2_,
             width, height, paddedwidth, paddedheight, channels, bottomcount, pad_size_,
             bottom0_diff, rbot1, rbot2, top_diff);
-        CORRELATION_CUDA_CHECK(cudaPeekAtLastError());
+        CORRELATION_CUDA_CHECK(hipPeekAtLastError());
         }
         for (int n = 0; n < num; n++) {
         //  Bottom1:
@@ -551,7 +552,7 @@ void Backward_gpu(
             stride1_, stride2_,
             width, height, paddedwidth, paddedheight, channels, bottomcount, pad_size_,
             rbot1, rbot2, bottom1_diff, top_diff);
-        CORRELATION_CUDA_CHECK(cudaPeekAtLastError());
+        CORRELATION_CUDA_CHECK(hipPeekAtLastError());
         }
     }
 }
@@ -568,9 +569,9 @@ inline void CorrelationForward(const Tensor<gpu, 4, Dtype> &out,
                                int neighborhood_grid_radius_, int neighborhood_grid_width_,
                                int kernel_radius_, int stride1_, int stride2_
                            ) {
-  cudaStream_t stream = Stream<gpu>::GetStream(out.stream_);
-  cudaStream_t stream_tmp1 = Stream<gpu>::GetStream(tmp1.stream_);
-  cudaStream_t stream_tmp2 = Stream<gpu>::GetStream(tmp2.stream_);
+  hipStream_t stream = Stream<gpu>::GetStream(out.stream_);
+  hipStream_t stream_tmp1 = Stream<gpu>::GetStream(tmp1.stream_);
+  hipStream_t stream_tmp2 = Stream<gpu>::GetStream(tmp2.stream_);
   cuda::Forward_gpu(out, data1, data2, tmp1, tmp2, top_channels_, top_height_,
                     top_width_, pad_size_, is_multiply, max_displacement_, kernel_size_,
                     neighborhood_grid_radius_, neighborhood_grid_width_, kernel_radius_,
@@ -590,8 +591,8 @@ inline void CorrelationBackward(const Tensor<gpu, 4, Dtype> &out_grad,
                             int  kernel_radius_, int stride1_,
                             int stride2_, int num, int channels, int height, int width
                             ) {
-  cudaStream_t stream0 = Stream<gpu>::GetStream(in_grad1.stream_);
-  cudaStream_t stream1 = Stream<gpu>::GetStream(in_grad2.stream_);
+  hipStream_t stream0 = Stream<gpu>::GetStream(in_grad1.stream_);
+  hipStream_t stream1 = Stream<gpu>::GetStream(in_grad2.stream_);
   cuda::Backward_gpu(out_grad, in_grad1, in_grad2, tmp1, tmp2, top_channels_,
                       top_height_, top_width_, pad_size_, is_multiply,
                       max_displacement_, kernel_size_, neighborhood_grid_radius_,

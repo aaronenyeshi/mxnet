@@ -23,8 +23,8 @@ inline void BilinearSamplingForward(const Tensor<cpu, 4, DType> &output,
         for (index_t w = 0; w < o_w; ++w) {
           index_t out_index = n * o_c * o_h * o_w + c * o_h * o_w + h * o_w + w;
           index_t grid_index = n * o_h * o_w * 2 + h * o_w + w;
-          DType y_real = (*(grid + grid_index + o_h * o_w) + 1) * (i_h - 1) / 2;
-          DType x_real = (*(grid + grid_index) + 1) * (i_w - 1) / 2;
+          DType y_real = (*(grid + grid_index + o_h * o_w) + 1) * DType((i_h - 1) / 2);
+          DType x_real = (*(grid + grid_index) + 1) * DType((i_w - 1) / 2);
           index_t top_left_y = std::min(i_h, std::max(0, static_cast<int>(floor(y_real))));
           index_t top_left_x = std::min(i_w, std::max(0, static_cast<int>(floor(x_real))));
           DType top_left_y_w = 1.0 - (y_real - top_left_y);
@@ -62,8 +62,8 @@ inline void BilinearSamplingBackward(const Tensor<cpu, 4, DType> &input_grad,
           DType top_left_y_gw = 0.0;
           DType top_left_x_gw = 0.0;
           index_t grid_src_index = n * o_h * o_w * 2 + h * o_w + w;
-          DType y_real = (*(grid_src + grid_src_index + o_h * o_w) + 1) * (i_h - 1) / 2;
-          DType x_real = (*(grid_src + grid_src_index) + 1) * (i_w - 1) / 2;
+          DType y_real = (*(grid_src + grid_src_index + o_h * o_w) + 1) * DType((i_h - 1) / 2);
+          DType x_real = (*(grid_src + grid_src_index) + 1) * DType((i_w - 1) / 2);
           index_t top_left_y = std::min(i_h, std::max(0, static_cast<int>(floor(y_real))));
           index_t top_left_x = std::min(i_w, std::max(0, static_cast<int>(floor(x_real))));
           DType top_left_y_w = 1.0 - (y_real - top_left_y);
@@ -94,8 +94,8 @@ inline void BilinearSamplingBackward(const Tensor<cpu, 4, DType> &input_grad,
                              * top_left_y_w);
           }
           // calc grid_src grad
-          *(grid_src + grid_src_index + o_h * o_w) = top_left_y_gw * (i_h - 1) / 2;
-          *(grid_src + grid_src_index) = top_left_x_gw * (i_w - 1) / 2;
+          *(grid_src + grid_src_index + o_h * o_w) = top_left_y_gw * DType((i_h - 1) / 2);
+          *(grid_src + grid_src_index) = top_left_x_gw * DType((i_w - 1) / 2);
         }
       }
     }

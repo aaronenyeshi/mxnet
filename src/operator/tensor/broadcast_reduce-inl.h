@@ -152,10 +152,10 @@ MSHADOW_XINLINE void seq_reduce_assign(const int idx, const int M, const bool ad
   assign(&small[idx], addto, val);
 }
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
 #include "broadcast_reduce-inl.cuh"
 
-#else
+#endif
 
 template<int ndim, typename DType, typename OP>
 void binary_broadcast_compute(const int N, const bool addto, const DType *lhs,
@@ -283,7 +283,6 @@ void Reduce(Stream<cpu> *s, const TBlob& small, const OpReqType req,
     lhs.shape_.get<ndim>(), rhs.shape_.get<ndim>());
 }
 
-#endif
 }  // namespace broadcast
 }  // namespace op
 }  // namespace mxnet

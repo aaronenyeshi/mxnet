@@ -43,7 +43,7 @@ class CuDNNConvolutionOp : public Operator {
 
 #if CUDNN_MAJOR >= 5
     MSHADOW_LAYOUT_SWITCH(param_.layout.value(), Layout, {
-      format_ = LayoutType<Layout>::kCudnnFlag;
+      //format_ = LayoutType<Layout>::kCudnnFlag;
     });
 #else
     CHECK(param_.layout.value() == kNCHW || param_.layout.value() == kNCDHW)
@@ -71,12 +71,12 @@ class CuDNNConvolutionOp : public Operator {
 
   ~CuDNNConvolutionOp() {
     if (init_cudnn_) {
-      CUDNN_CALL(cudnnDestroyTensorDescriptor(in_desc_));
-      CUDNN_CALL(cudnnDestroyTensorDescriptor(out_desc_));
-      CUDNN_CALL(cudnnDestroyTensorDescriptor(bias_desc_));
-      CUDNN_CALL(cudnnDestroyFilterDescriptor(filter_desc_));
-      CUDNN_CALL(cudnnDestroyConvolutionDescriptor(forward_conv_desc_));
-      CUDNN_CALL(cudnnDestroyConvolutionDescriptor(backward_conv_desc_));
+      CUDNN_CALL(miopenDestroyTensorDescriptor(in_desc_));
+      CUDNN_CALL(miopenDestroyTensorDescriptor(out_desc_));
+      CUDNN_CALL(miopenDestroyTensorDescriptor(bias_desc_));
+      CUDNN_CALL(miopenDestroyTensorDescriptor(filter_desc_));
+      CUDNN_CALL(miopenDestroyConvolutionDescriptor(forward_conv_desc_));
+      CUDNN_CALL(miopenDestroyConvolutionDescriptor(backward_conv_desc_));
     }
   }
 
@@ -121,9 +121,10 @@ class CuDNNConvolutionOp : public Operator {
     }
     for (uint32_t g = 0; g < param_.num_group; ++g) {
       typename DataType<DType>::ScaleType alpha = 1.0f;
+      typename DataType<DType>::ScaleType alpha2 = 1.0f;
       typename DataType<DType>::ScaleType beta = 0.0f;
       typename DataType<DType>::ScaleType beta_add = 1.0f;
-      CUDNN_CALL(cudnnConvolutionForward(s->dnn_handle_,
+      CUDNN_CALL(miopenConvolutionForward(s->dnn_handle_,
                                        &alpha,
                                        in_desc_,
                                        data_ptr + data_offset_ * g,
@@ -131,31 +132,44 @@ class CuDNNConvolutionOp : public Operator {
                                        wmat_ptr + weight_offset_ * g,
                                        forward_conv_desc_,
                                        algo_,
-                                       workspace.dptr_,
-                                       forward_workspace_byte_,
                                        req[conv::kOut] == kAddTo? &beta_add : &beta,
                                        out_desc_,
-                                       out_ptr + out_offset_ * g));
+                                       out_ptr + out_offset_ * g,
+				       workspace.dptr_,
+                                       forward_workspace_byte_));
       if (!param_.no_bias) {
         Tensor<gpu, 1, DType> bias = in_data[conv::kBias].get<gpu, 1, DType>(s);
         #if CUDNN_MAJOR >= 4
-        CUDNN_CALL(cudnnAddTensor(s->dnn_handle_,
-                                &alpha,
+	miopenTensorDescriptor_t b_desc_; //TODO .Temporarily fix .Temporarily defined
+        CUDNN_CALL(miopenCreateTensorDescriptor(&b_desc_)); //TODO .Temporarily defined
+        CUDNN_CALL(miopenOpTensor(s->dnn_handle_,
+                                miopenTensorOpAdd,
+				&alpha,
                                 bias_desc_,
                                 bias.dptr_ + bias_offset_ * g,
+                                &alpha2,
+                                b_desc_,
+				nullptr, //TODO .Temporary fix .Has to replace with valid data pointer
                                 &beta_add,
                                 out_desc_,
                                 out_ptr + out_offset_ * g));
+	CUDNN_CALL(miopenDestroyTensorDescriptor(b_desc_)); //TODO .Temporarily defined
         #endif
         #if CUDNN_MAJOR == 3
-        CUDNN_CALL(cudnnAddTensor(s->dnn_handle_,
-                                CUDNN_ADD_SAME_C,
+        miopenTensorDescriptor_t b_desc_; //TODO .Temporarily fix .Temporarily defined
+        CUDNN_CALL(miopenCreateTensorDescriptor(&b_desc_)); //TODO .Temporarily defined
+        CUDNN_CALL(miopenOpTensor(s->dnn_handle_,
+                                miopenTensorOpAdd,
                                 &alpha,
                                 bias_desc_,
                                 bias.dptr_ + bias_offset_ * g,
+				&alpha2,
+				b_desc_,
+				nullptr, //TODO .Temporary fix .Has to replace with valid data pointer
                                 &beta_add,
                                 out_desc_,
                                 out_ptr + out_offset_ * g));
+        CUDNN_CALL(miopenDestroyTensorDescriptor(b_desc_)); //TODO .Temporarily defined
         #endif
       }
     }
@@ -211,7 +225,7 @@ class CuDNNConvolutionOp : public Operator {
       typename DataType<DType>::ScaleType beta_add = 1.0f;
       if (!param_.no_bias && (req[conv::kBias] != kNullOp)) {
         Tensor<gpu, 1, DType> gbias = in_grad[conv::kBias].get<gpu, 1, DType>(s);
-        CUDNN_CALL(cudnnConvolutionBackwardBias(s->dnn_handle_,
+        CUDNN_CALL(miopenConvolutionBackwardBias(s->dnn_handle_,
                                               &alpha,
                                               out_desc_,
                                               grad_ptr + out_offset_ * g,
@@ -221,7 +235,7 @@ class CuDNNConvolutionOp : public Operator {
       }
       if (req[conv::kWeight] != kNullOp) {
         #if CUDNN_MAJOR <= 4
-          CUDNN_CALL(cudnnConvolutionBackwardFilter_v3(s->dnn_handle_,
+          /*CUDNN_CALL(cudnnConvolutionBackwardFilter_v3(s->dnn_handle_,
                &alpha,
                in_desc_,
                data_ptr + data_offset_ * g,
@@ -233,26 +247,26 @@ class CuDNNConvolutionOp : public Operator {
                backward_workspace_byte_,
                req[conv::kWeight] == kAddTo? &beta_add : &beta,
                filter_desc_,
-               gwmat_ptr + weight_offset_ * g));
+               gwmat_ptr + weight_offset_ * g));*/ //Not supported
         #elif CUDNN_MAJOR >= 5
-          CUDNN_CALL(cudnnConvolutionBackwardFilter(s->dnn_handle_,
+          CUDNN_CALL(miopenConvolutionBackwardWeights(s->dnn_handle_,
                &alpha,
-               in_desc_,
-               data_ptr + data_offset_ * g,
                out_desc_,
                grad_ptr + out_offset_ * g,
+               in_desc_,
+               data_ptr + data_offset_ * g,
                backward_conv_desc_,
                back_algo_w_,
-               workspace.dptr_,
-               backward_workspace_byte_,
                req[conv::kWeight] == kAddTo? &beta_add : &beta,
                filter_desc_,
-               gwmat_ptr + weight_offset_ * g));
+               gwmat_ptr + weight_offset_ * g,
+               workspace.dptr_,
+               backward_workspace_byte_));
         #endif
       }
       if (req[conv::kData] != kNullOp) {
         #if CUDNN_MAJOR <= 4
-          CUDNN_CALL(cudnnConvolutionBackwardData_v3(s->dnn_handle_,
+          /*CUDNN_CALL(cudnnConvolutionBackwardData_v3(s->dnn_handle_,
                &alpha,
                filter_desc_,
                wmat_ptr + weight_offset_ * g,
@@ -264,21 +278,21 @@ class CuDNNConvolutionOp : public Operator {
                backward_workspace_byte_,
                req[conv::kData] == kAddTo? &beta_add : &beta,
                in_desc_,
-               gdata_ptr + data_offset_ * g));
+               gdata_ptr + data_offset_ * g));*/ //Not supported
         #elif CUDNN_MAJOR >= 5
-          CUDNN_CALL(cudnnConvolutionBackwardData(s->dnn_handle_,
+          CUDNN_CALL(miopenConvolutionBackwardData(s->dnn_handle_,
                &alpha,
-               filter_desc_,
-               wmat_ptr + weight_offset_ * g,
                out_desc_,
                grad_ptr + out_offset_ * g,
+               filter_desc_,
+               wmat_ptr + weight_offset_ * g,
                backward_conv_desc_,
                back_algo_,
-               workspace.dptr_,
-               backward_workspace_byte_,
                req[conv::kData] == kAddTo? &beta_add : &beta,
                in_desc_,
-               gdata_ptr + data_offset_ * g));
+               gdata_ptr + data_offset_ * g,
+               workspace.dptr_,
+               backward_workspace_byte_));
         #endif
       }
     }
@@ -313,10 +327,10 @@ class CuDNNConvolutionOp : public Operator {
 
  private:
 /*!
- * \brief Translate an mxnet datatype to the corresponding cudnnDataType_t.
+ * \brief Translate an mxnet datatype to the corresponding miopenDataType_t.
  */
-  cudnnDataType_t convertToCuDNNDataType(int dtype) {
-    cudnnDataType_t converted = CUDNN_DATA_FLOAT;
+  miopenDataType_t convertToCuDNNDataType(int dtype) {
+    miopenDataType_t converted = miopenFloat;
     // The following will always assign to `converted` or throw an exception.
     MSHADOW_REAL_TYPE_SWITCH(dtype, mxDType, {
       converted = mshadow::DataType<mxDType>::kCudnnFlag;
@@ -327,18 +341,18 @@ class CuDNNConvolutionOp : public Operator {
   void InitDescriptors(const Context& ctx,
                        const std::vector<TShape>& in_shape,
                        const std::vector<TShape>& out_shape,
-                       cudnnDataType_t cudnn_forward_compute_type,
-                       cudnnDataType_t cudnn_backward_compute_type) {
+                       miopenDataType_t cudnn_forward_compute_type,
+                       miopenDataType_t cudnn_backward_compute_type) {
     using namespace mshadow;
     size_t expected = param_.no_bias ? 2 : 3;
     CHECK_EQ(in_shape.size(), expected);
     CHECK_EQ(out_shape.size(), 1U);
-    CUDNN_CALL(cudnnCreateTensorDescriptor(&in_desc_));
-    CUDNN_CALL(cudnnCreateTensorDescriptor(&out_desc_));
-    CUDNN_CALL(cudnnCreateTensorDescriptor(&bias_desc_));
-    CUDNN_CALL(cudnnCreateFilterDescriptor(&filter_desc_));
-    CUDNN_CALL(cudnnCreateConvolutionDescriptor(&forward_conv_desc_));
-    CUDNN_CALL(cudnnCreateConvolutionDescriptor(&backward_conv_desc_));
+    CUDNN_CALL(miopenCreateTensorDescriptor(&in_desc_));
+    CUDNN_CALL(miopenCreateTensorDescriptor(&out_desc_));
+    CUDNN_CALL(miopenCreateTensorDescriptor(&bias_desc_));
+    CUDNN_CALL(miopenCreateTensorDescriptor(&filter_desc_));
+    CUDNN_CALL(miopenCreateConvolutionDescriptor(&forward_conv_desc_));
+    CUDNN_CALL(miopenCreateConvolutionDescriptor(&backward_conv_desc_));
 
     TShape dshape = in_shape[conv::kData];
     TShape wshape = in_shape[conv::kWeight];
@@ -348,60 +362,57 @@ class CuDNNConvolutionOp : public Operator {
     if (param_.kernel.ndim() == 2) {
       // 2d conv
 
-      // As of cuDNN_v6, the unsuffixed version of cudnnSetConvolution2dDescriptor()
+      // As of cuDNN_v6, the unsuffixed version of miopenInitConvolutionDescriptor()
       // requires an additional 'computeType' parameter to set the precision of the
       // convolution calculation.  This facility was available as of v5 in
       // cudnnSetConvolution2dDescriptor_v5(), but was never accessed.
       #if CUDNN_MAJOR >= 6
-      CUDNN_CALL(cudnnSetConvolution2dDescriptor(forward_conv_desc_,
+      CUDNN_CALL(miopenInitConvolutionDescriptor(forward_conv_desc_,
+                                               miopenTranspose,//CUDNN_CROSS_CORRELATION,
+					       param_.pad[0],
+                                               param_.pad[1],
+                                               param_.stride[0],
+                                               param_.stride[1],
+                                               param_.dilate[0],
+                                               param_.dilate[1]));
+      CUDNN_CALL(miopenInitConvolutionDescriptor(backward_conv_desc_,
+                                               miopenTranspose,//CUDNN_CROSS_CORRELATION,
                                                param_.pad[0],
                                                param_.pad[1],
                                                param_.stride[0],
                                                param_.stride[1],
                                                param_.dilate[0],
-                                               param_.dilate[1],
-                                               CUDNN_CROSS_CORRELATION,
-                                               cudnn_forward_compute_type));
-      CUDNN_CALL(cudnnSetConvolution2dDescriptor(backward_conv_desc_,
-                                               param_.pad[0],
-                                               param_.pad[1],
-                                               param_.stride[0],
-                                               param_.stride[1],
-                                               param_.dilate[0],
-                                               param_.dilate[1],
-                                               CUDNN_CROSS_CORRELATION,
-                                               cudnn_backward_compute_type));
+                                               param_.dilate[1]));
       #else
-      CUDNN_CALL(cudnnSetConvolution2dDescriptor(forward_conv_desc_,
+      CUDNN_CALL(miopenInitConvolutionDescriptor(forward_conv_desc_,
+                                               miopenTranspose,//CUDNN_CROSS_CORRELATION,
                                                param_.pad[0],
                                                param_.pad[1],
                                                param_.stride[0],
                                                param_.stride[1],
                                                param_.dilate[0],
-                                               param_.dilate[1],
-                                               CUDNN_CROSS_CORRELATION));
-      CUDNN_CALL(cudnnSetConvolution2dDescriptor(backward_conv_desc_,
+                                               param_.dilate[1]));
+      CUDNN_CALL(miopenInitConvolutionDescriptor(backward_conv_desc_,
+					       miopenTranspose,//CUDNN_CROSS_CORRELATION,
                                                param_.pad[0],
                                                param_.pad[1],
                                                param_.stride[0],
                                                param_.stride[1],
                                                param_.dilate[0],
-                                               param_.dilate[1],
-                                               CUDNN_CROSS_CORRELATION));
+                                               param_.dilate[1]));
       #endif
 
       #if CUDNN_MAJOR >= 5
       wshape = ConvertLayout(wshape.get<4>(), param_.layout.value(), kNCHW);
-      CUDNN_CALL(cudnnSetFilter4dDescriptor(filter_desc_,
+      CUDNN_CALL(miopenSet4dTensorDescriptor(filter_desc_,
                                           dtype_,
-                                          format_,
                                           wshape[0],
                                           wshape[1],
                                           wshape[2],
                                           wshape[3]));
       #else
       CHECK_EQ(param_.layout.value(), kNCHW) << "CuDNN V4 only support NCHW layout";
-      CUDNN_CALL(cudnnSetFilter4dDescriptor(filter_desc_,
+      CUDNN_CALL(miopenSet4dTensorDescriptor(filter_desc_,
                                           dtype_,
                                           wshape[0],
                                           wshape[1],
@@ -426,29 +437,30 @@ class CuDNNConvolutionOp : public Operator {
       // 3d conv
       #if CUDNN_MAJOR >= 5
       CHECK_EQ(param_.layout.value(), kNCDHW) << "CuDNN only support 3D conv with NCDHW layout";
-      CUDNN_CALL(cudnnSetFilterNdDescriptor(filter_desc_,
+      /*CUDNN_CALL(cudnnSetFilterNdDescriptor(filter_desc_,
                                           dtype_,
                                           CUDNN_TENSOR_NCHW,
                                           static_cast<int>(wshape.ndim()),
-                                          reinterpret_cast<int*>(&wshape[0])));
+                                          reinterpret_cast<int*>(&wshape[0])));*/ //TODO temporarily commented unsupported in miopen
+
       #else
       LOG(FATAL) << "Only support CUDNN V5 for 3D convolution";
       #endif
-      CUDNN_CALL(cudnnSetConvolutionNdDescriptor(forward_conv_desc_,
+      /*CUDNN_CALL(cudnnSetConvolutionNdDescriptor(forward_conv_desc_,
                                                3,
                                                reinterpret_cast<int*>(&param_.pad[0]),
                                                reinterpret_cast<int*>(&param_.stride[0]),
                                                reinterpret_cast<int*>(&param_.dilate[0]),
-                                               CUDNN_CROSS_CORRELATION,
-                                               cudnn_forward_compute_type));
+                                               miopenTranspose,//CUDNN_CROSS_CORRELATION,
+                                               cudnn_forward_compute_type));*/ //TODO temporarily commented unsupported in miopen
 
-      CUDNN_CALL(cudnnSetConvolutionNdDescriptor(backward_conv_desc_,
+      /*CUDNN_CALL(cudnnSetConvolutionNdDescriptor(backward_conv_desc_,
                                                3,
                                                reinterpret_cast<int*>(&param_.pad[0]),
                                                reinterpret_cast<int*>(&param_.stride[0]),
                                                reinterpret_cast<int*>(&param_.dilate[0]),
-                                               CUDNN_CROSS_CORRELATION,
-                                               cudnn_backward_compute_type));
+                                               miopenTranspose,//CUDNN_CROSS_CORRELATION,
+                                               cudnn_backward_compute_type)); */ //TODO temporarily commented unsupported in miopen
 
       dstride = ConvertLayout(Shape5(dshape[1] * dshape[2] * dshape[3] * dshape[4],
                                      dshape[2] * dshape[3] * dshape[4],
@@ -472,17 +484,17 @@ class CuDNNConvolutionOp : public Operator {
     data_offset_ = dstride[1] * dshape[1];
     out_offset_ = ostride[1] * oshape[1];
 
-    CUDNN_CALL(cudnnSetTensorNdDescriptor(in_desc_,
+    /*CUDNN_CALL(cudnnSetTensorNdDescriptor(in_desc_,
                                         dtype_,
                                         static_cast<int>(dshape.ndim()),
                                         reinterpret_cast<int*>(&dshape[0]),
-                                        reinterpret_cast<int*>(&dstride[0])));
+                                        reinterpret_cast<int*>(&dstride[0])));*/ //TODO temporarily commented unsupported in miopen
 
-    CUDNN_CALL(cudnnSetTensorNdDescriptor(out_desc_,
+    /*CUDNN_CALL(cudnnSetTensorNdDescriptor(out_desc_,
                                         dtype_,
                                         static_cast<int>(oshape.ndim()),
                                         reinterpret_cast<int*>(&oshape[0]),
-                                        reinterpret_cast<int*>(&ostride[0])));
+                                        reinterpret_cast<int*>(&ostride[0])));*/ //TODO temporarily commented unsupported in miopen
 
     if (!param_.no_bias) {
       TShape bias = in_shape[conv::kBias];
@@ -495,11 +507,11 @@ class CuDNNConvolutionOp : public Operator {
         bias_shape.push_back(1);
         bias_stride.push_back(1);
       }
-      CUDNN_CALL(cudnnSetTensorNdDescriptor(bias_desc_,
+      /*CUDNN_CALL(cudnnSetTensorNdDescriptor(bias_desc_,
                                           dtype_,
                                           static_cast<int>(bias_shape.size()),
                                           &bias_shape[0],
-                                          &bias_stride[0]));
+                                          &bias_stride[0]));*/ //TODO temporarily commented unsupported in miopen
     }
     init_cudnn_ = true;
   }
@@ -507,8 +519,8 @@ class CuDNNConvolutionOp : public Operator {
   void SelectAlgo(const Context& ctx,
                   const std::vector<TShape>& in_shape,
                   const std::vector<TShape>& out_shape,
-                  cudnnDataType_t cudnn_forward_compute_type,
-                  cudnnDataType_t cudnn_backward_compute_type) {
+                  miopenDataType_t cudnn_forward_compute_type,
+                  miopenDataType_t cudnn_backward_compute_type) {
     std::string key = CuDNNAlgoReg::Get()->GetKey(param_, in_shape, out_shape, dtype_,
                                                   cudnn_forward_compute_type,
                                                   cudnn_backward_compute_type);
@@ -524,18 +536,18 @@ class CuDNNConvolutionOp : public Operator {
         // In cuDNNv6, for kNHWC, only CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM is
         // supported.  Hard-coded this since the algo find() or get() throws an FPE.
         if (CUDNN_MAJOR == 6 && param_.layout.value() == mshadow::kNHWC) {
-          algo_ = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
+          algo_ = miopenConvolutionFwdAlgoGEMM;
         } else {
-          CUDNN_CALL(cudnnGetConvolutionForwardAlgorithm(s->dnn_handle_,
+          /*CUDNN_CALL(miopenFindConvolutionForwardAlgorithm(s->dnn_handle_,
                  in_desc_,
                  filter_desc_,
                  forward_conv_desc_,
                  out_desc_,
                  CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
                  workspace_byte,
-                 &(this->algo_)));
+                 &(this->algo_)));*/ //TODO Temporarily commented.Parameters to be fixed
         }
-        CUDNN_CALL(cudnnGetConvolutionBackwardFilterAlgorithm(s->dnn_handle_,
+       /* CUDNN_CALL(miopenFindConvolutionBackwardWeightsAlgorithm(s->dnn_handle_,
                  in_desc_,
                  out_desc_,
                  backward_conv_desc_,
@@ -543,14 +555,14 @@ class CuDNNConvolutionOp : public Operator {
                  CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
                  workspace_byte,
                  &(this->back_algo_w_)));
-          CUDNN_CALL(cudnnGetConvolutionBackwardDataAlgorithm(s->dnn_handle_,
+          CUDNN_CALL(miopenFindConvolutionBackwardDataAlgorithm(s->dnn_handle_,
                  filter_desc_,
                  out_desc_,
                  backward_conv_desc_,
                  in_desc_,
                  CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
                  workspace_byte,
-                 &(this->back_algo_)));
+                 &(this->back_algo_)));*/ //TODO Temporarily commented.Parameters to be fixed
       } else {
         const int kMaxAlgos = 10;
         int nalgo = kMaxAlgos;
@@ -559,67 +571,67 @@ class CuDNNConvolutionOp : public Operator {
         // In cuDNNv6, for kNHWC, only CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM is
         // supported.  Hard-coded this since the algo find() or get() throws an FPE.
         if (CUDNN_MAJOR == 6 && param_.layout.value() == mshadow::kNHWC) {
-          algo_ = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
+          algo_ = miopenConvolutionFwdAlgoGEMM;
         } else {
-          cudnnConvolutionFwdAlgoPerf_t fwd_algo[kMaxAlgos];
-          CUDNN_CALL(cudnnFindConvolutionForwardAlgorithm(s->dnn_handle_,
+          miopenConvAlgoPerf_t fwd_algo[kMaxAlgos];
+          /*CUDNN_CALL(miopenFindConvolutionForwardAlgorithm(s->dnn_handle_,
                  in_desc_,
                  filter_desc_,
                  forward_conv_desc_,
                  out_desc_,
                  kMaxAlgos,
                  &nalgo,
-                 fwd_algo));
+                 fwd_algo));*/ //TODO Temporarily commented.Parameters to be fixed
           i = 0;
           while (i < nalgo
-               && (fwd_algo[i].status != CUDNN_STATUS_SUCCESS
-               || (param_.cudnn_tune.value() == conv::kLimited
+               && (//fwd_algo[i].status != miopenStatusSuccess //TODO .Unsupported status variable in miopenConvAlgoPerf_t
+                (param_.cudnn_tune.value() == conv::kLimited
                && fwd_algo[i].memory > workspace_byte))) ++i;
           if (i == nalgo) {
             LOG(FATAL) << "Failed to find a forward convolution algorithm.";
           } else {
-            this->algo_ = fwd_algo[i].algo;
+            //this->algo_ = fwd_algo[i].algo; //TODO .Unsupported algo variable in miopenConvAlgoPerf_t
           }
         }
 
-        cudnnConvolutionBwdFilterAlgoPerf_t bwd_filter_algo[kMaxAlgos];
-        CUDNN_CALL(cudnnFindConvolutionBackwardFilterAlgorithm(s->dnn_handle_,
+        miopenConvAlgoPerf_t bwd_filter_algo[kMaxAlgos];
+        /*CUDNN_CALL(miopenFindConvolutionBackwardWeightsAlgorithm(s->dnn_handle_,
                  in_desc_,
                  out_desc_,
                  backward_conv_desc_,
                  filter_desc_,
                  kMaxAlgos,
                  &nalgo,
-                 bwd_filter_algo));
+                 bwd_filter_algo));*/ //TODO Temporarily commented.Parameters to be fixed
         i = 0;
         while (i < nalgo
-               && (bwd_filter_algo[i].status != CUDNN_STATUS_SUCCESS
-               || (param_.cudnn_tune.value() == conv::kLimited
+               && (//bwd_filter_algo[i].status != miopenStatusSuccess //TODO .Unsupported status variable in miopenConvAlgoPerf_t
+                (param_.cudnn_tune.value() == conv::kLimited
                && bwd_filter_algo[i].memory > workspace_byte))) ++i;
         if (i == nalgo) {
           LOG(FATAL) << "Failed to find a backward filter convolution algorithm.";
         } else {
-          this->back_algo_w_ = bwd_filter_algo[i].algo;
+          //this->back_algo_w_ = bwd_filter_algo[i].algo;//TODO .Unsupported algo variable in miopenConvAlgoPerf_t
         }
 
-        cudnnConvolutionBwdDataAlgoPerf_t bwd_data_algo[kMaxAlgos];
-        CUDNN_CALL(cudnnFindConvolutionBackwardDataAlgorithm(s->dnn_handle_,
+        miopenConvAlgoPerf_t bwd_data_algo[kMaxAlgos];
+        /*CUDNN_CALL(miopenFindConvolutionBackwardDataAlgorithm(s->dnn_handle_,
                  filter_desc_,
                  out_desc_,
                  backward_conv_desc_,
                  in_desc_,
                  kMaxAlgos,
                  &nalgo,
-                 bwd_data_algo));
+                 bwd_data_algo));*/ //TODO Temporarily commented.Parameters to be fixed
         i = 0;
         while (i < nalgo
-               && (bwd_data_algo[i].status != CUDNN_STATUS_SUCCESS
-               || (param_.cudnn_tune.value() == conv::kLimited
+               && (//bwd_data_algo[i].status != miopenStatusSuccess //TODO .Unsupported status variable in miopenConvAlgoPerf_t
+                (param_.cudnn_tune.value() == conv::kLimited
                && bwd_data_algo[i].memory > workspace_byte))) ++i;
         if (i == nalgo) {
           LOG(FATAL) << "Failed to find a backward data convolution algorithm.";
         } else {
-          this->back_algo_ = bwd_data_algo[i].algo;
+          //this->back_algo_ = bwd_data_algo[i].algo; //TODO .Unsupported algo variable in miopenConvAlgoPerf_t
         }
         CuDNNAlgoReg::Get()->Register(key, this->algo_, this->back_algo_,
                                       this->back_algo_w_);
@@ -633,27 +645,24 @@ class CuDNNConvolutionOp : public Operator {
     if (init_temp_size_) return;
     mshadow::Stream<gpu> *s = ctx.get_stream<gpu>();
     size_t back_size = 0, back_size_w = 0;
-    CUDNN_CALL(cudnnGetConvolutionBackwardDataWorkspaceSize(s->dnn_handle_,
-               filter_desc_,
+    CUDNN_CALL(miopenConvolutionBackwardDataGetWorkSpaceSize(s->dnn_handle_,
                out_desc_,
+               filter_desc_,
                backward_conv_desc_,
                in_desc_,
-               back_algo_,
                &back_size));
-    CUDNN_CALL(cudnnGetConvolutionBackwardFilterWorkspaceSize(s->dnn_handle_,
-               in_desc_,
+    CUDNN_CALL(miopenConvolutionBackwardWeightsGetWorkSpaceSize(s->dnn_handle_,
                out_desc_,
+               in_desc_,
                backward_conv_desc_,
                filter_desc_,
-               back_algo_w_,
                &back_size_w));
     backward_workspace_byte_ = std::max(back_size, back_size_w);
-    CUDNN_CALL(cudnnGetConvolutionForwardWorkspaceSize(s->dnn_handle_,
-               in_desc_,
+    CUDNN_CALL(miopenConvolutionForwardGetWorkSpaceSize(s->dnn_handle_,
                filter_desc_,
+               in_desc_,
                forward_conv_desc_,
                out_desc_,
-               algo_,
                &forward_workspace_byte_));
 
     forward_workspace_ = forward_workspace_byte_ / sizeof(DType) + 1;
@@ -671,22 +680,22 @@ class CuDNNConvolutionOp : public Operator {
   size_t out_offset_;
   size_t weight_offset_;
   size_t bias_offset_;
-  cudnnDataType_t dtype_;
-  cudnnTensorDescriptor_t in_desc_;
-  cudnnTensorDescriptor_t out_desc_;
-  cudnnTensorDescriptor_t bias_desc_;
-  cudnnFilterDescriptor_t filter_desc_;
+  miopenDataType_t dtype_;
+  miopenTensorDescriptor_t in_desc_;
+  miopenTensorDescriptor_t out_desc_;
+  miopenTensorDescriptor_t bias_desc_;
+  miopenTensorDescriptor_t filter_desc_;
   // Convolution descriptor for forward inference operation
-  cudnnConvolutionDescriptor_t forward_conv_desc_;
+  miopenConvolutionDescriptor_t forward_conv_desc_;
   // Convolution descriptor for back-prop operations to data and filter
-  cudnnConvolutionDescriptor_t backward_conv_desc_;
+  miopenConvolutionDescriptor_t backward_conv_desc_;
   // Algorithm for the forward inference operation
-  cudnnConvolutionFwdAlgo_t algo_;
+  miopenConvFwdAlgorithm_t algo_;
   // Algorithm for the back-prop operation to the data
-  cudnnConvolutionBwdDataAlgo_t back_algo_;
+  miopenConvBwdDataAlgorithm_t back_algo_;
   // Algorithm for the back-prop operation to the weights
-  cudnnConvolutionBwdFilterAlgo_t back_algo_w_;
-  cudnnTensorFormat_t format_;
+  miopenConvBwdWeightsAlgorithm_t back_algo_w_;
+  //cudnnTensorFormat_t format_;
   ConvolutionParam param_;
 };
 #endif  // __CUDACC__ && CUDNN

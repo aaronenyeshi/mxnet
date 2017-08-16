@@ -49,7 +49,8 @@ ifeq ($(DEBUG), 1)
 else
 	CFLAGS += -O3
 endif
-CFLAGS += -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
+HIPINCLUDES +=  -I. -I/opt/rocm/include -I/opt/rocm/hcblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include
+CFLAGS += $(HIPINCLUDES) -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
 LDFLAGS = -pthread $(MSHADOW_LDFLAGS) $(DMLC_LDFLAGS)
 ifeq ($(DEBUG), 1)
 	NVCCFLAGS = -std=c++11 -Xcompiler -D_FORCE_INLINES -g -G -O0 -ccbin $(CXX) $(MSHADOW_NVCCFLAGS)
@@ -104,7 +105,7 @@ endif
 
 ifeq ($(USE_CUDNN), 1)
 	CFLAGS += -DMSHADOW_USE_CUDNN=1
-	LDFLAGS += -lcudnn
+	LDFLAGS += -L/opt/rocm/miopen/lib -lMIOpen
 endif
 
 
@@ -122,7 +123,7 @@ ifneq ($(ADD_LDFLAGS), NONE)
 endif
 
 ifneq ($(USE_CUDA_PATH), NONE)
-	NVCC=$(USE_CUDA_PATH)/bin/nvcc
+#	NVCC=$(USE_CUDA_PATH)/bin/nvcc
 endif
 
 # ps-lite
@@ -142,7 +143,7 @@ all: lib/libmxnet.a lib/libmxnet.so $(BIN) extra-packages
 
 SRC = $(wildcard src/*/*/*.cc src/*/*.cc src/*.cc)
 OBJ = $(patsubst %.cc, build/%.o, $(SRC))
-CUSRC = $(wildcard src/*/*/*.cu src/*/*.cu src/*.cu)
+CUSRC = $(wildcard src/*/*/*.cu src/*/*.cu src/*.cu *.cu)
 CUOBJ = $(patsubst %.cu, build/%_gpu.o, $(CUSRC))
 
 # extra operators
@@ -185,9 +186,10 @@ LIB_DEP += $(DMLC_CORE)/libdmlc.a $(NNVM_PATH)/lib/libnnvm.a
 ALL_DEP = $(OBJ) $(EXTRA_OBJ) $(PLUGIN_OBJ) $(LIB_DEP)
 
 ifeq ($(USE_CUDA), 1)
-	CFLAGS += -I$(ROOTDIR)/cub
+#	CFLAGS += -I$(ROOTDIR)/cub-hip
 	ALL_DEP += $(CUOBJ) $(EXTRA_CUOBJ) $(PLUGIN_CUOBJ)
-	LDFLAGS += -lcuda -lcufft
+	LDFLAGS += -L/opt/rocm/hip/lib -lhip_hcc -L/opt/rocm/hcblas/lib -lhcblas -lhipblas_hcc -L/opt/rocm/hcrng/lib -lhcrng -lhiprng_hcc -L/opt/rocm/hcfft/lib -lhcfft -lhipfft_hcc
+	LDFLAGS += -lcudart -lcuda -lcufft
 	SCALA_PKG_PROFILE := $(SCALA_PKG_PROFILE)-gpu
 else
 	SCALA_PKG_PROFILE := $(SCALA_PKG_PROFILE)-cpu
@@ -203,21 +205,33 @@ else
 	CFLAGS += -DMXNET_USE_NVRTC=0
 endif
 
+ifeq ($(HIP_PLATFORM), hcc)
+	CXX = hipcc
+endif
+
+ifeq ($(CXX), g++)
+	HIPFLAGS = -D__NVCC__
+endif
+
 build/src/%.o: src/%.cc
 	@mkdir -p $(@D)
-	$(CXX) -std=c++11 -c $(CFLAGS) -MMD -c $< -o $@
+	$(CXX) -std=c++11 -c $(HIPFLAGS) $(CFLAGS) -MMD -c $< -o $@
 
-build/src/%_gpu.o: src/%.cu
+build/%_gpu.o: %.cu
 	@mkdir -p $(@D)
-	$(NVCC) $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler "$(CFLAGS)" -M -MT build/src/$*_gpu.o $< >build/src/$*_gpu.d
-	$(NVCC) -c -o $@ $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler "$(CFLAGS)" $<
+#	$(NVCC) -std=c++11 "$(CFLAGS)" -M -MT build/src/$*_gpu.o $< >build/src/$*_gpu.d
+#	$(NVCC) -std=c++11 -c -o $@  "$(CFLAGS)" $<
+	$(NVCC) $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler \"$(CFLAGS)\" -M -MT build/$*_gpu.o $< >build/$*_gpu.d
+	$(NVCC) -c -o $@ $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler \"$(CFLAGS)\" $<
+
 
 # A nvcc bug cause it to generate "generic/xxx.h" dependencies from torch headers.
 # Use CXX to generate dependency instead.
 build/plugin/%_gpu.o: plugin/%.cu
 	@mkdir -p $(@D)
 	$(CXX) -std=c++11 $(CFLAGS) -MM -MT build/plugin/$*_gpu.o $< >build/plugin/$*_gpu.d
-	$(NVCC) -c -o $@ $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler "$(CFLAGS)" $<
+#	$(NVCC) -std=c++11 -c -o $@ "$(CFLAGS)" $<
+	$(NVCC) -c -o $@ $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler \"$(CFLAGS)\" $<
 
 build/plugin/%.o: plugin/%.cc
 	@mkdir -p $(@D)
@@ -225,8 +239,11 @@ build/plugin/%.o: plugin/%.cc
 
 %_gpu.o: %.cu
 	@mkdir -p $(@D)
+#	$(NVCC) -std=c++11 "$(CFLAGS) -Isrc/operator" -M -MT $*_gpu.o $< >$*_gpu.d
+#	$(NVCC) -std=c++11 -c -o $@ "$(CFLAGS) -Isrc/operator" $<
 	$(NVCC) $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler "$(CFLAGS) -Isrc/operator" -M -MT $*_gpu.o $< >$*_gpu.d
-	$(NVCC) -c -o $@ $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler "$(CFLAGS) -Isrc/operator" $<
+	$(NVCC) -c -o $@ $(NVCCFLAGS) $(CUDA_ARCH) -Xcompiler \"$(CFLAGS) -Isrc/operator\" $<
+
 
 %.o: %.cc
 	@mkdir -p $(@D)

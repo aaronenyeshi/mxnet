@@ -9,7 +9,7 @@
 #include "./base.h"
 #if ((MXNET_USE_CUDA) && (MXNET_USE_NVRTC))
 #include <nvrtc.h>
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 
 #include <vector>
 #include <string>
