@@ -34,7 +34,7 @@ class StorageImpl : public Storage {
       case Context::kGPU:
       case Context::kCPUPinned:
 #if MXNET_USE_CUDA
-        CUDA_CALL(hipSetDevice(ctx.dev_id));
+        CUDA_CALL(cudaSetDevice(ctx.dev_id));
 #else  // MXNET_USE_CUDA
         LOG(FATAL) << "Please compile with CUDA enabled";
 #endif  // MXNET_USE_CUDA

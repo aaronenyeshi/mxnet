@@ -1,4 +1,3 @@
-#include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2015 by Contributors
  * \file sequence_mask.cu
@@ -15,12 +14,12 @@ namespace cuda {
 ////////////////////////////////////////////////////////////////////////////////
 // Cross-Entropy loss
 template<int n_bits, typename DType>
-__global__ void SequenceMaskKernel(hipLaunchParm lpTensor<gpu, 3, DType> dst,
+__global__ void SequenceMaskKernel(Tensor<gpu, 3, DType> dst,
                     const Tensor<gpu, 1, DType> lengths, DType value) {
   const index_t smax = dst.size(0);
   const index_t bmax = lengths.size(1);
   const index_t nmax = dst.size(2);
-  unsigned int batch = hipThreadIdx_x + hipBlockIdx_x * hipBlockDim_x;
+  unsigned int batch = threadIdx.x + blockIdx.x * blockDim.x;
 
   // early return if out of bounds
   if (batch >= bmax)
@@ -40,7 +39,7 @@ inline void SequenceMask(const Tensor<gpu, 3, DType> &dst,
   dim3 dimBlock(kBaseThreadNum);
   dim3 dimGrid(dst.size(1));
   CheckLaunchParam(dimGrid, dimBlock, "SequenceMask");
-  hipStream_t stream = Stream<gpu>::GetStream(dst.stream_);
+  cudaStream_t stream = Stream<gpu>::GetStream(dst.stream_);
   SequenceMaskKernel<kBaseThreadBits, DType><<<dimGrid, dimBlock, 0, stream>>>(dst, lengths, value);
 }
 

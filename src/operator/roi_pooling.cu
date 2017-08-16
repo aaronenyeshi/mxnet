@@ -1,4 +1,3 @@
-#include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2015 by Contributors
  * \file roi_pooling.cu
@@ -15,15 +14,15 @@ namespace mshadow {
 namespace cuda {
 
 template<typename Dtype>
-__global__ void ROIPoolForwardKernel(hipLaunchParm lp,const int count, const Dtype* bottom_data,
+__global__ void ROIPoolForwardKernel(const int count, const Dtype* bottom_data,
                                      const float spatial_scale, const int channels,
                                      const int height, const int width,
                                      const int pooled_height, const int pooled_width,
                                      const Dtype* bottom_rois, Dtype* top_data,
                                      Dtype* argmax_data) {
-  for (int index = (hipBlockIdx_x + hipBlockIdx_y * hipGridDim_x) * hipBlockDim_x + hipThreadIdx_x;
+  for (int index = (blockIdx.x + blockIdx.y * gridDim.x) * blockDim.x + threadIdx.x;
        index < count;
-       index += hipBlockDim_x * hipGridDim_x * hipGridDim_y) {
+       index += blockDim.x * gridDim.x * gridDim.y) {
     // (n, c, ph, pw) is an element in the pooled output
     int pw = index % pooled_width;
     int ph = (index / pooled_width) % pooled_height;
@@ -107,22 +106,22 @@ inline void ROIPoolForward(const Tensor<gpu, 4, Dtype> &out,
   dim3 dimGrid(kMaxGridDim, (gridSize + kMaxGridDim - 1) / kMaxGridDim);
   dim3 dimBlock(kMaxThreadsPerBlock);
   CheckLaunchParam(dimGrid, dimBlock, "ROIPooling Forward");
-  hipStream_t stream = Stream<gpu>::GetStream(out.stream_);
+  cudaStream_t stream = Stream<gpu>::GetStream(out.stream_);
   ROIPoolForwardKernel<Dtype><<<dimGrid, dimBlock, 0, stream>>>(
       count, bottom_data, spatial_scale, channels, height, width,
       pooled_height, pooled_width, bottom_rois, top_data, argmax_data);
 }
 
 template<typename Dtype>
-__global__ void ROIPoolBackwardAccKernel(hipLaunchParm lp,const int count, const Dtype* top_diff,
+__global__ void ROIPoolBackwardAccKernel(const int count, const Dtype* top_diff,
                                          const Dtype* argmax_data, const int num_rois,
                                          const float spatial_scale, const int channels,
                                          const int height, const int width,
                                          const int pooled_height, const int pooled_width,
                                          Dtype* bottom_diff, const Dtype* bottom_rois) {
-  for (int index = (hipBlockIdx_x + hipBlockIdx_y * hipGridDim_x) * hipBlockDim_x + hipThreadIdx_x;
+  for (int index = (blockIdx.x + blockIdx.y * gridDim.x) * blockDim.x + threadIdx.x;
        index < count;
-       index += hipBlockDim_x * hipGridDim_x * hipGridDim_y) {
+       index += blockDim.x * gridDim.x * gridDim.y) {
     // (n, c, h, w) coords in bottom data
     int w = index % width;
     int h = (index / width) % height;
@@ -210,7 +209,7 @@ inline void ROIPoolBackwardAcc(const Tensor<gpu, 4, Dtype> &in_grad,
   dim3 dimGrid(kMaxGridDim, (gridSize + kMaxGridDim - 1) / kMaxGridDim);
   dim3 dimBlock(kMaxThreadsPerBlock);
   CheckLaunchParam(dimGrid, dimBlock, "ROIPooling Backward");
-  hipStream_t stream = Stream<gpu>::GetStream(in_grad.stream_);
+  cudaStream_t stream = Stream<gpu>::GetStream(in_grad.stream_);
   ROIPoolBackwardAccKernel<Dtype><<<dimGrid, dimBlock, 0, stream>>>(
       count, top_diff, argmax_data, num_rois, spatial_scale, channels, height, width,
       pooled_height, pooled_width, bottom_diff, bottom_rois);

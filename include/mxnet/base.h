@@ -244,7 +244,7 @@ inline Context Context::Create(DeviceType dev_type, int32_t dev_id) {
     ctx.dev_id = 0;
     if (dev_type != kCPU) {
 #if MXNET_USE_CUDA
-      CHECK_EQ(hipGetDevice(&ctx.dev_id), hipSuccess);
+      CHECK_EQ(cudaGetDevice(&ctx.dev_id), cudaSuccess);
 #else
       LOG(FATAL) << "Please compile with CUDA enabled for cuda features";
 #endif

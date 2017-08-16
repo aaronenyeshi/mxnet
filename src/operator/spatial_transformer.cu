@@ -1,4 +1,3 @@
-#include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2016 by Contributors
  * \file spatial_transformer.cu
@@ -14,14 +13,14 @@
 
 namespace mshadow {
 template<typename DType>
-__global__ void BilinearSamplingForwardKernel(hipLaunchParm lp,const int i_c, const int i_h,
+__global__ void BilinearSamplingForwardKernel(const int i_c, const int i_h,
                                               const int i_w, const DType* data,
                                               const DType* grid, const int o_n,
                                               const int o_c, const int o_h,
                                               const int o_w, DType* out) {
-  for (int index = (hipBlockIdx_x + hipBlockIdx_y * hipGridDim_x) * hipBlockDim_x + hipThreadIdx_x;
+  for (int index = (blockIdx.x + blockIdx.y * gridDim.x) * blockDim.x + threadIdx.x;
        index < o_n * o_c * o_h * o_w;
-       index += hipBlockDim_x * hipGridDim_x * hipGridDim_y) {
+       index += blockDim.x * gridDim.x * gridDim.y) {
     // (n, c, h, w) is the element in out
     int w = index % o_w;
     int h = (index / o_w) % o_h;
@@ -48,15 +47,15 @@ __global__ void BilinearSamplingForwardKernel(hipLaunchParm lp,const int i_c, co
 }
 
 template<typename DType>
-__global__ void BilinearSamplingBackwardKernel(hipLaunchParm lp,const int i_c, const int i_h,
+__global__ void BilinearSamplingBackwardKernel(const int i_c, const int i_h,
                                               const int i_w, const DType* grad,
                                               const DType* data, const int o_n,
                                               const int o_c, const int o_h,
                                               const int o_w, DType* g_input,
                                               DType* grid_src) {
-  for (int index = (hipBlockIdx_x + hipBlockIdx_y * hipGridDim_x) * hipBlockDim_x + hipThreadIdx_x;
+  for (int index = (blockIdx.x + blockIdx.y * gridDim.x) * blockDim.x + threadIdx.x;
        index < o_n * o_h * o_w;
-       index += hipBlockDim_x * hipGridDim_x * hipGridDim_y) {
+       index += blockDim.x * gridDim.x * gridDim.y) {
     // (n, c, h, w) is the element in grad
     int w = index % o_w;
     int h = (index / o_w) % o_h;
@@ -110,7 +109,7 @@ inline void BilinearSamplingForward(const Tensor<gpu, 4, DType> &output,
     dim3 num_blocks(kMaxGridDim, (max_block + kMaxGridDim - 1) / kMaxGridDim);
     dim3 threads_per_block(kMaxThreadsPerBlock);
     CheckLaunchParam(num_blocks, threads_per_block, "spatial transformer forward");
-    hipStream_t stream = Stream<gpu>::GetStream(output.stream_);
+    cudaStream_t stream = Stream<gpu>::GetStream(output.stream_);
     BilinearSamplingForwardKernel<DType> << <num_blocks, threads_per_block, 0, stream >> >(
       i_c, i_h, i_w, data, grid, o_n, o_c, o_h, o_w, out);
 }
@@ -133,7 +132,7 @@ inline void BilinearSamplingBackward(const Tensor<gpu, 4, DType> &input_grad,
   dim3 num_blocks(kMaxGridDim, (max_block + kMaxGridDim - 1) / kMaxGridDim);
   dim3 threads_per_block(kMaxThreadsPerBlock);
   CheckLaunchParam(num_blocks, threads_per_block, "spatial transformer backward");
-  hipStream_t stream = Stream<gpu>::GetStream(input_grad.stream_);
+  cudaStream_t stream = Stream<gpu>::GetStream(input_grad.stream_);
   BilinearSamplingBackwardKernel<DType> << <num_blocks, threads_per_block, 0, stream >> >(
     i_c, i_h, i_w, grad, data, o_n, o_c, o_h, o_w, g_input, grid_src);
 }

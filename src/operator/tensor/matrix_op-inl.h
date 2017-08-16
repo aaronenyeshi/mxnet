@@ -1702,12 +1702,12 @@ void ReverseOpForward(const nnvm::NodeAttrs& attrs,
   auto stride_workspace = workspace.dptr_;
   auto trailing_workspace = workspace.dptr_ + reverse_index * sizeof(index_t);
 
-  hipMemcpyAsync(stride_workspace, thrust::raw_pointer_cast(stride_.data()),
+  cudaMemcpyAsync(stride_workspace, thrust::raw_pointer_cast(stride_.data()),
                   stride_.size() * sizeof(index_t),
-                  hipMemcpyHostToDevice, mshadow::Stream<gpu>::GetStream(s));
-  hipMemcpyAsync(trailing_workspace, thrust::raw_pointer_cast(trailing_.data()),
+                  cudaMemcpyHostToDevice, mshadow::Stream<gpu>::GetStream(s));
+  cudaMemcpyAsync(trailing_workspace, thrust::raw_pointer_cast(trailing_.data()),
                   trailing_.size() * sizeof(index_t),
-                  hipMemcpyHostToDevice, mshadow::Stream<gpu>::GetStream(s));
+                  cudaMemcpyHostToDevice, mshadow::Stream<gpu>::GetStream(s));
 
 #endif
 

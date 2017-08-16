@@ -21,10 +21,10 @@ void IndexTensorToVector(mshadow::Tensor<gpu, 1, DType> data,
 #if MXNET_USE_CUDA
   DType *temp_index =
       reinterpret_cast<DType *>(malloc(sizeof(DType) * max_seq_len));
-  hipError_t cuda_status =
-      hipMemcpyAsync(temp_index, data.dptr_, max_seq_len * sizeof(DType),
-                      hipMemcpyDeviceToHost, data.stream_->stream_);
-  CHECK_EQ(cuda_status, hipSuccess) << "cuda memcpy label error";
+  cudaError_t cuda_status =
+      cudaMemcpyAsync(temp_index, data.dptr_, max_seq_len * sizeof(DType),
+                      cudaMemcpyDeviceToHost, data.stream_->stream_);
+  CHECK_EQ(cuda_status, cudaSuccess) << "cuda memcpy label error";
   for (int i = 0; i < max_seq_len; ++i) {
     (*index_vec)[i] = static_cast<index_t>(temp_index[i]);
   }

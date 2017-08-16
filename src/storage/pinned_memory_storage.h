@@ -33,15 +33,15 @@ class PinnedMemoryStorage {
 inline void* PinnedMemoryStorage::Alloc(size_t size) {
   void* ret = nullptr;
   // make the memory available across all devices
-  CUDA_CALL(hipHostAlloc(&ret, size, hipHostAllocPortable));
+  CUDA_CALL(cudaHostAlloc(&ret, size, cudaHostAllocPortable));
   return ret;
 }
 
 inline void PinnedMemoryStorage::Free(void* ptr) {
-  hipError_t err = hipFreeHost(ptr);
+  cudaError_t err = cudaFreeHost(ptr);
   // ignore unloading error, as memory has already been recycled
-  if (err != hipSuccess && err != hipErrorCudartUnloading) {
-    LOG(FATAL) << "CUDA: " << hipGetErrorString(err);
+  if (err != cudaSuccess && err != cudaErrorCudartUnloading) {
+    LOG(FATAL) << "CUDA: " << cudaGetErrorString(err);
   }
 }
 

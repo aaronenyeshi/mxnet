@@ -20,7 +20,7 @@ class Comm {
   Comm() {
 #if MXNET_USE_CUDA
     int gpu_num;
-    int ret = hipGetDeviceCount(&gpu_num);
+    int ret = cudaGetDeviceCount(&gpu_num);
     pinned_ctx_ = (ret == 0 && gpu_num > 0) ?
                   Context::CPUPinned(0) : Context::CPU();
 #else
@@ -298,13 +298,13 @@ class CommDevice : public Comm {
     int enabled = 0;
     std::vector<int> p2p(n*n);
     for (int i = 0; i < n; ++i) {
-      hipSetDevice(gpus[i]);
+      cudaSetDevice(gpus[i]);
       for (int j = 0; j < n; j++) {
         int access;
-        hipDeviceCanAccessPeer(&access, gpus[i], gpus[j]);
+        cudaDeviceCanAccessPeer(&access, gpus[i], gpus[j]);
         if (access) {
-          hipError_t e = hipDeviceEnablePeerAccess(gpus[j], 0);
-          if (e == hipSuccess || e == hipErrorPeerAccessAlreadyEnabled) {
+          cudaError_t e = cudaDeviceEnablePeerAccess(gpus[j], 0);
+          if (e == cudaSuccess || e == cudaErrorPeerAccessAlreadyEnabled) {
             ++enabled;
             p2p[i*n+j] = 1;
           }

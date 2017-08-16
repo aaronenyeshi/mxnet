@@ -1,4 +1,3 @@
-#include <hip/hip_runtime.h>
 #include <cstdio>
 #include <gtest/gtest.h>
 #include <dmlc/logging.h>
@@ -25,11 +24,11 @@ TEST(Storage, Basic_CPU) {
 static bool checkForWorkingCuda()
 {
   int count = 0;
-  if (hipSuccess == hipGetDeviceCount(&count)) {
+  if (cudaSuccess == cudaGetDeviceCount(&count)) {
     if (count == 0) return -1;
     for (int device = 0; device < count; ++device) {
-      hipDeviceProp_t prop;
-      if (hipSuccess == hipGetDeviceProperties(&prop, device)) {
+      cudaDeviceProp prop;
+      if (cudaSuccess == cudaGetDeviceProperties(&prop, device)) {
         std::printf("%d.%d ", prop.major, prop.minor);
         return true;
       }

@@ -31,7 +31,7 @@ use AI::MXNet::Function::Parameters;
         For example, if name = "mykernel" and
         inputs = [('x', mx.nd.zeros((10,)))]
         outputs = [('y', mx.nd.zeros((10,)))]
-        kernel = "y[hipThreadIdx_x] = x[hipThreadIdx_x];",
+        kernel = "y[threadIdx.x] = x[threadIdx.x];",
         the kernel that is compile will be:
         extern "C" __global__ mykernel(float *x, float *y) {
             const int x_ndim = 1;
@@ -39,7 +39,7 @@ use AI::MXNet::Function::Parameters;
             const int y_ndim = 1;
             const int y_dims = { 10 };
 
-            y[hipThreadIdx_x] = x[hipThreadIdx_x];
+            y[threadIdx.x] = x[threadIdx.x];
         }
 =cut
 
