@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #pragma once
 
 #include "ctc_helper.h"
@@ -269,16 +270,14 @@ ctcStatus_t GpuCTC<ProbT>::launch_alpha_beta_kernels(const ProbT* const probs,
     const int stride = minibatch_;
 
     if (compute_alpha)
-        compute_alpha_kernel<ProbT, NT, VT><<<grid_size, NT, 0, stream_>>>
-            (probs, label_sizes_, utt_length_,
+        hipLaunchKernelGGL(HIP_KERNEL_NAME(compute_alpha_kernel<ProbT, NT, VT>), dim3(grid_size), dim3(NT), 0, stream_, probs, label_sizes_, utt_length_,
              repeats_, labels_without_blanks_, label_offsets_,
              labels_with_blanks_, alphas_, nll_forward_,
              stride, out_dim_, S_, T_, blank_label_);
 
 
     if (compute_beta) {
-        compute_betas_and_grad_kernel<ProbT, NT, VT><<<grid_size, NT, 0, stream_>>>
-            (probs, label_sizes_, utt_length_, repeats_,
+        hipLaunchKernelGGL(HIP_KERNEL_NAME(compute_betas_and_grad_kernel<ProbT, NT, VT>), dim3(grid_size), dim3(NT), 0, stream_, probs, label_sizes_, utt_length_, repeats_,
              labels_with_blanks_, alphas_, nll_forward_, nll_backward_,
              grads, stride, out_dim_, S_, T_, blank_label_);
 
@@ -384,8 +383,7 @@ GpuCTC<ProbT>::compute_probs(const ProbT* const activations) {
     const int num_elements = out_dim_ * activation_cols_;
     const int grid_size = ctc_helper::div_up(num_elements, NV);
 
-    prepare_stable_SM_kernel<ProbT, VT> <<< grid_size, NT, 0, stream_>>>
-       (ctc_helper::identity<ProbT>(), probs_,
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(prepare_stable_SM_kernel<ProbT, VT>), dim3(grid_size), dim3(NT), 0, stream_, ctc_helper::identity<ProbT>(), probs_,
         denoms_, out_dim_, num_elements);
 
     // compute denominators for softmax
@@ -397,8 +395,7 @@ GpuCTC<ProbT>::compute_probs(const ProbT* const activations) {
         1);
 
     // Kernel launch to calculate probabilities
-    compute_probs_kernel<ProbT, VT><<<grid_size, NT, 0, stream_>>>
-        (ctc_helper::exponential<ProbT>(), probs_,
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(compute_probs_kernel<ProbT, VT>), dim3(grid_size), dim3(NT), 0, stream_, ctc_helper::exponential<ProbT>(), probs_,
          denoms_, out_dim_, num_elements);
 
     return CTC_STATUS_SUCCESS;

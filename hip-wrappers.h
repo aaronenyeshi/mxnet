@@ -8,11 +8,16 @@
 
 #include <hipblas.h>
 #include <hiprng.h>
+#include <hip/hip_fp16.h>
 
-
-
-#ifdef __HIPCC__
+#ifdef __HIP_PLATFORM_HCC__
  #define __launch_bounds__(...) 
+#endif
+
+#if defined(__HIP_PLATFORM_HCC__) && !defined (__HCC__)
+typedef struct {
+   unsigned short x;
+}__half;
 #endif
 
 typedef enum hipDataType_t

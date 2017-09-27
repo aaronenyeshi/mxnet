@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2015 by Contributors
@@ -107,11 +108,11 @@ inline void CountSketchForward(const Tensor<gpu, 2, DType> &out,
     // to make number of threads the same as input
     const int threads_per_block = min(THREADS_PER_BLOCK, nthreads);
     int nblocks = (nthreads + threads_per_block - 1) / threads_per_block;
-    cuda::sketch_forward_kernel<DType><<<nblocks, threads_per_block>>>(
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda::sketch_forward_kernel<DType>), dim3(nblocks), dim3(threads_per_block), 0, 0,
                                     nthreads, out_ptr+bstart*out_dim, h_ptr,
                                     s_ptr, in_ptr+bstart*in_dim, batchlen,
                                     in_dim, out_dim);
-    // cudaThreadSynchronize();
+    // hipDeviceSynchronize();
     bstart = (i+1)*batchlen;
   }
 }
@@ -142,7 +143,7 @@ inline void CountSketchBackward(const Tensor<gpu, 2, DType> &in_grad,
     // to make number of threads the same as input
     const int threads_per_block = min(THREADS_PER_BLOCK, nthreads);
     int nblocks = (nthreads + threads_per_block - 1) / threads_per_block;
-    cuda::sketch_backward_kernel<DType><<<nblocks, threads_per_block>>>(
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda::sketch_backward_kernel<DType>), dim3(nblocks), dim3(threads_per_block), 0, 0,
                             nthreads, in_grad_ptr+bstart*in_dim, h_ptr,
                             s_ptr, out_grad_ptr+bstart*out_dim, batchlen,
                             in_dim, out_dim);

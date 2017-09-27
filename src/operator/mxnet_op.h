@@ -1,4 +1,3 @@
-#include <hip/hip_runtime.h>
 /*!
  * Copyright (c) 2017 by Contributors
  * \file mxnet_op.h
@@ -11,6 +10,7 @@
 #include <mxnet/base.h>
 #include <algorithm>
 
+#include <hip/hip_runtime.h>
 namespace mxnet {
 namespace op {
 namespace mxnet_op {

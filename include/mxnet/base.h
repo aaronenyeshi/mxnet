@@ -1,4 +1,3 @@
-#include <hip/hip_runtime.h>
 /*!
  *  Copyright (c) 2015 by Contributors
  * \file base.h
@@ -7,6 +6,7 @@
 #ifndef MXNET_BASE_H_
 #define MXNET_BASE_H_
 
+#include <hip/hip_runtime.h>
 #include <dmlc/base.h>
 #include <dmlc/io.h>
 #include <dmlc/type_traits.h>

@@ -1639,7 +1639,7 @@ struct reverse {
     }
     return outputIndex;
   }
-#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
+#if defined(__HIPCC__)
   template<typename DType>
   __device__  static void Map(int index, index_t nreversedim, const DType *src, DType *dst,
                               const index_t * stride_,
@@ -1695,7 +1695,7 @@ void ReverseOpForward(const nnvm::NodeAttrs& attrs,
   }
 
 //#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
-#if defined(__CUDACC__) //TODO
+#if defined(__HIPCC__)
 
   mshadow::Tensor<xpu, 1, uint8_t> workspace =
     ctx.requested[0].get_space_typed<xpu, 1, uint8_t>(
@@ -1713,7 +1713,7 @@ void ReverseOpForward(const nnvm::NodeAttrs& attrs,
 #endif
 
 //#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
-#if defined(__CUDACC__) //TODO
+#if defined(__HIPCC__)
   MSHADOW_TYPE_SWITCH(outputs[0].type_flag_, DType, {
     Kernel<reverse, xpu>::Launch(s, inputs[0].Size(), reverse_index,
     inputs[0].dptr<DType>(), outputs[0].dptr<DType>(),

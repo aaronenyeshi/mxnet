@@ -67,7 +67,7 @@ class FullyConnectedOp : public Operator {
     // TODO(bing): judge shape to remove flatten op
     Stream<xpu> *s = ctx.get_stream<xpu>();
 //#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
-#if defined(__CUDACC__)
+#if defined(__HIPCC__)
     CHECK_EQ(s->blas_handle_ownership_, Stream<xpu>::OwnHandle)
         << "Must init CuBLAS handle in stream";
 #endif  // __HIPCC__
@@ -112,7 +112,7 @@ class FullyConnectedOp : public Operator {
         Shape2(oshape[0], oshape.ProdShape(1, oshape.ndim())), s);
 
 //#if defined(__HIPCC__) && (__HIP_DEVICE_COMPILE__ == 1)
-#if defined(__CUDACC__)
+#if defined(__HIPCC__)
     CHECK_EQ(s->blas_handle_ownership_, Stream<xpu>::OwnHandle)
         << "Must init CuBLAS handle in stream";
 #endif
