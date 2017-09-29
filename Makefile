@@ -52,7 +52,7 @@ endif
 
 HIP_PLATFORM := $(shell hipconfig -P)
 ifeq ($(HIP_PLATFORM), hcc)
-	HIPINCLUDE += -I../../Thrust
+	HIPINCLUDE += -I../Thrust
 endif
 HIPINCLUDE +=  -I. -I/opt/rocm/include -I/opt/rocm/hcblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include
 CFLAGS += $(HIPINCLUDE) -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
