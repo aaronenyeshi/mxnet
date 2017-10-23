@@ -10,7 +10,7 @@ class GpuCTC {
         GpuCTC(int alphabet_size,
                int minibatch,
                void *workspace,
-               CUstream stream,
+               hipStream_t stream,
                int blank_label) :
             out_dim_(alphabet_size), minibatch_(minibatch),
             gpu_workspace_(workspace), stream_(stream),
@@ -84,7 +84,7 @@ class GpuCTC {
         int activation_cols_; // Number of columns in activations
 
         void *gpu_workspace_; // Buffer for all temporary GPU memory
-        CUstream stream_;
+        hipStream_t stream_;
         int blank_label_;
 
         int *utt_length_; // T

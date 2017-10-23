@@ -1,4 +1,3 @@
-#include "hip/hip_runtime.h"
 /*!
  ******************* BEGIN Caffe Copyright Notice and Disclaimer ****************
  *
@@ -60,6 +59,7 @@
 #ifndef MXNET_OPERATOR_NN_POOL_CUH_
 #define MXNET_OPERATOR_NN_POOL_CUH_
 
+#include "hip/hip_runtime.h"
 #include <mxnet/base.h>
 #include <mxnet/operator.h>
 #include "../mxnet_op.h"
@@ -336,7 +336,9 @@ __global__ void unpool_max_1d_gpu_kernel(const int nthreads, const DType* out_gr
     // In the case where pad > 0 and kernel = 1, for example,
     // max_idx can be -1 reaching this step.
     if (max_idx >= 0) {
-      atomicAdd(&in_grad[in_offset+max_idx], out_grad[index]);
+      #if defined(__HIP_PLATFORM_NVCC__)
+       atomicAdd(&in_grad[in_offset+max_idx], out_grad[index]); //TODO. Fix compilation issue for HCC
+      #endif
     }
   }
 }
@@ -391,7 +393,10 @@ __global__ void unpool_max_2d_gpu_kernel(const int nthreads, const DType* out_gr
     // In the case where pad > 0 and kernel = 1, for example,
     // max_idx can be -1 reaching this step.
     if (max_idx >= 0) {
-      atomicAdd(&in_grad[in_offset+max_idx], out_grad[index]);
+
+      #if defined(__HIP_PLATFORM_NVCC__)
+       atomicAdd(&in_grad[in_offset+max_idx], out_grad[index]); //TODO. Fix compilation issue for HCC
+      #endif
     }
   }
 }
@@ -455,7 +460,9 @@ __global__ void unpool_max_3d_gpu_kernel(const int nthreads, const DType* out_gr
     // In the case where pad > 0 and kernel = 1, for example,
     // max_idx can be -1 reaching this step.
     if (max_idx >= 0) {
-      atomicAdd(&in_grad[in_offset+max_idx], out_grad[index]);
+      #if defined(__HIP_PLATFORM_NVCC__)
+       atomicAdd(&in_grad[in_offset+max_idx], out_grad[index]); //TODO. Fix compilation issue for HCC
+      #endif
     }
   }
 }

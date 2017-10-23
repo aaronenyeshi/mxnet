@@ -54,17 +54,19 @@ HIP_PLATFORM := $(shell hipconfig -P)
 ifeq ($(HIP_PLATFORM), hcc)
 	HIPINCLUDE += -I../../Thrust
 endif
-HIPINCLUDE +=  -I. -I/opt/rocm/include -I/opt/rocm/hcblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include
-CFLAGS += $(HIPINCLUDE) -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
-LDFLAGS = -pthread $(MSHADOW_LDFLAGS) $(DMLC_LDFLAGS)
+HIPINCLUDE += -I. -I/opt/rocm/hcblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include
+CFLAGS     += $(HIPINCLUDE) -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
+LDFLAGS    =  -pthread $(MSHADOW_LDFLAGS) $(DMLC_LDFLAGS)
 
 ifeq ($(HIP_PLATFORM), nvcc)
 	CCBINCLUDES = -ccbin $(CXX)
 	CXXFLAGS    = -std=c++11
-	HIPCCFLAGS  = \"$(CFLAGS)\" 
+	HIPCCFLAGS  = \"$(CFLAGS)\"
+	LINKER      = $(CXX)
 else ifeq ($(HIP_PLATFORM), hcc)
-	CXXFLAGS    = -std=c++11 
+	CXXFLAGS    = -std=c++11
 	HIPCCFLAGS  = $(CFLAGS)
+	LINKER      = $(NVCC)
 endif
 ifeq ($(DEBUG), 1)
 	NVCCFLAGS = $(CXXFLAGS) -Xcompiler -D_FORCE_INLINES -g -G -O0 $(CCBINCLUDES) $(MSHADOW_NVCCFLAGS)
@@ -74,7 +76,6 @@ endif
 
 ifeq ($(HIP_PLATFORM), hcc)
 	HIPFLAGS = $(shell hipconfig -C) 
-#       LDFLAGS += `hcc-config --ldflags`
 endif
 
 ifeq ($(HIP_PLATFORM), nvcc)
@@ -278,7 +279,7 @@ lib/libmxnet.a: $(ALLX_DEP)
 
 lib/libmxnet.so: $(ALLX_DEP)
 	 @mkdir -p $(@D)
-	 $(CXX) $(CFLAGS) -shared -o $@ $(filter-out %libnnvm.a, $(filter %.o %.a, $^)) $(LDFLAGS) \
+	 $(LINKER) $(CFLAGS) $(CUDA_ARCH) -shared -o $@ $(filter-out %libnnvm.a, $(filter %.o %.a, $^)) $(LDFLAGS) \
 	 -Wl,${WHOLE_ARCH} $(filter %libnnvm.a, $^) -Wl,${NO_WHOLE_ARCH}
 
 $(PS_PATH)/build/libps.a: PSLITE
@@ -300,7 +301,7 @@ bin/im2rec: tools/im2rec.cc $(ALLX_DEP)
 
 $(BIN) :
 	@mkdir -p $(@D)
-	$(CXX) $(CFLAGS) -std=c++11  -o $@ $(filter %.cpp %.o %.c %.a %.cc, $^) $(LDFLAGS)
+	$(LINKER) $(HIPFLAGS) $(CFLAGS) $(CUDA_ARCH) -std=c++11  -o $@ $(filter %.cpp %.o %.c %.a %.cc, $^) $(LDFLAGS)
 
 # CPP Package
 ifeq ($(USE_CPP_PACKAGE), 1)

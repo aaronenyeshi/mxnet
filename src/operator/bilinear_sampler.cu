@@ -96,22 +96,27 @@ __global__ void BilinearSamplerBackwardKernel(const int i_c, const int i_h,
       DType bottom_right_v = 0;
       // calc input grad
       if (between(top_left_x, 0, i_w-1) && between(top_left_y, 0, i_h-1)) {
-        atomicAdd(&g_input[data_index], *(grad + grad_index) * top_left_y_w * top_left_x_w);
+      #if defined(__HIP_PLATFORM_NVCC__)
+        atomicAdd(&g_input[data_index], *(grad + grad_index) * top_left_y_w * top_left_x_w);//TODO. Fix compilation issue for HCC
+      #endif
         top_left_v = *(data + data_index);
       }
       if (between(top_left_x+1, 0, i_w-1) && between(top_left_y, 0, i_h-1)) {
-        atomicAdd(&g_input[data_index + 1], *(grad + grad_index) * top_left_y_w
-                                        * (1.0 - top_left_x_w));
+      #if defined(__HIP_PLATFORM_NVCC__)
+       atomicAdd(&g_input[data_index + 1], *(grad + grad_index) * top_left_y_w* (1.0 - top_left_x_w));//TODO. Fix compilation issue for HCC
+      #endif
         top_right_v = *(data + data_index + 1);
       }
       if (between(top_left_x, 0, i_w-1) && between(top_left_y+1, 0, i_h-1)) {
-        atomicAdd(&g_input[data_index+ i_w], *(grad + grad_index) * (1.0 - top_left_y_w)
-                                        * top_left_x_w);
+      #if defined( __HIP_PLATFORM_NVCC__)
+       atomicAdd(&g_input[data_index+ i_w], *(grad + grad_index) * (1.0 - top_left_y_w)* top_left_x_w);//TODO. Fix compilation issue for HCC
+      #endif
         bottom_left_v = *(data + data_index + i_w);
       }
       if (between(top_left_x+1, 0, i_w-1) && between(top_left_y+1, 0, i_h-1)) {
-        atomicAdd(&g_input[data_index+ i_w + 1], *(grad + grad_index) * (1.0 - top_left_y_w)
-                                            * (1.0 - top_left_x_w));
+      #if defined(__HIP_PLATFORM_NVCC__)
+       atomicAdd(&g_input[data_index+ i_w + 1], *(grad + grad_index) * (1.0 - top_left_y_w)* (1.0 - top_left_x_w));//TODO. Fix compilation issue for HCC
+      #endif
         bottom_right_v = *(data + data_index + i_w + 1);
       }
       // calc weight grad of top_left_w, then multiple -1 is the grad of grid_src
@@ -147,8 +152,9 @@ inline void BilinearSamplerForward(const Tensor<gpu, 4, DType> &output,
     dim3 threads_per_block(kMaxThreadsPerBlock);
     CheckLaunchParam(num_blocks, threads_per_block, "bilinear sampler forward");
     hipStream_t stream = Stream<gpu>::GetStream(output.stream_);
-    cuda::BilinearSamplerForwardKernel<DType> << <num_blocks, threads_per_block, 0, stream >> >(
-      i_c, i_h, i_w, data, grid, o_n, o_c, o_h, o_w, out);
+    /*cuda::BilinearSamplerForwardKernel<DType> << <num_blocks, threads_per_block, 0, stream >> >(
+      i_c, i_h, i_w, data, grid, o_n, o_c, o_h, o_w, out);*/
+     hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda::BilinearSamplerForwardKernel<DType>), dim3(num_blocks), dim3(threads_per_block), 0, stream,i_c, i_h, i_w, data, grid, o_n, o_c, o_h, o_w, out);
     // post kernel check
     hipError_t err = hipPeekAtLastError();
     CHECK_EQ(err, hipSuccess) << hipGetErrorString(err);
@@ -178,8 +184,9 @@ inline void BilinearSamplerBackward(const Tensor<gpu, 4, DType> &input_grad,
   dim3 threads_per_block(kMaxThreadsPerBlock);
   CheckLaunchParam(num_blocks, threads_per_block, "bilinear sampler backward");
   hipStream_t stream = Stream<gpu>::GetStream(input_grad.stream_);
-  cuda::BilinearSamplerBackwardKernel<DType> << <num_blocks, threads_per_block, 0, stream >> >(
-    i_c, i_h, i_w, grad, data, o_n, o_c, o_h, o_w, g_input, grid_src, grad_grid);
+/*  cuda::BilinearSamplerBackwardKernel<DType> << <num_blocks, threads_per_block, 0, stream >> >(
+    i_c, i_h, i_w, grad, data, o_n, o_c, o_h, o_w, g_input, grid_src, grad_grid);*/
+     hipLaunchKernelGGL(HIP_KERNEL_NAME(cuda::BilinearSamplerBackwardKernel<DType>), dim3(num_blocks), dim3(threads_per_block), 0, stream,i_c, i_h, i_w, grad, data, o_n, o_c, o_h, o_w, g_input, grid_src, grad_grid);
   // post kernel check
   hipError_t err = hipPeekAtLastError();
   CHECK_EQ(err, hipSuccess) << hipGetErrorString(err);

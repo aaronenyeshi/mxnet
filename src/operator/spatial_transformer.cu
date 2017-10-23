@@ -111,8 +111,9 @@ inline void BilinearSamplingForward(const Tensor<gpu, 4, DType> &output,
     dim3 threads_per_block(kMaxThreadsPerBlock);
     CheckLaunchParam(num_blocks, threads_per_block, "spatial transformer forward");
     hipStream_t stream = Stream<gpu>::GetStream(output.stream_);
-    BilinearSamplingForwardKernel<DType> << <num_blocks, threads_per_block, 0, stream >> >(
-      i_c, i_h, i_w, data, grid, o_n, o_c, o_h, o_w, out);
+    /*BilinearSamplingForwardKernel<DType> << <num_blocks, threads_per_block, 0, stream >> >(
+      i_c, i_h, i_w, data, grid, o_n, o_c, o_h, o_w, out);*/
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(BilinearSamplingForwardKernel<DType>),dim3(num_blocks),dim3(threads_per_block), 0, stream,i_c, i_h, i_w, data, grid, o_n, o_c, o_h, o_w, out );
 }
 
 template<typename DType>
@@ -134,8 +135,9 @@ inline void BilinearSamplingBackward(const Tensor<gpu, 4, DType> &input_grad,
   dim3 threads_per_block(kMaxThreadsPerBlock);
   CheckLaunchParam(num_blocks, threads_per_block, "spatial transformer backward");
   hipStream_t stream = Stream<gpu>::GetStream(input_grad.stream_);
-  BilinearSamplingBackwardKernel<DType> << <num_blocks, threads_per_block, 0, stream >> >(
-    i_c, i_h, i_w, grad, data, o_n, o_c, o_h, o_w, g_input, grid_src);
+/*  BilinearSamplingBackwardKernel<DType> << <num_blocks, threads_per_block, 0, stream >> >(
+    i_c, i_h, i_w, grad, data, o_n, o_c, o_h, o_w, g_input, grid_src);*/
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(BilinearSamplingBackwardKernel<DType>),dim3(num_blocks),dim3(threads_per_block), 0, stream,i_c, i_h, i_w, grad, data, o_n, o_c, o_h, o_w, g_input, grid_src);
 }
 
 }  // namespace mshadow

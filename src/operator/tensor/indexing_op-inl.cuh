@@ -10,6 +10,7 @@
 #include <cub/device/device_run_length_encode.cuh>
 #include <cub/device/device_scan.cuh>
 #endif
+#include <hip/hip_runtime.h>
 namespace mxnet {
 namespace op {
 const int kWarpSize = 32;

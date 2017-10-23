@@ -43,10 +43,10 @@ void MXRtc::push(std::vector<NDArray> const& input,
     if (func_.find(dev_id) != func_.end()) {
         func = func_[dev_id];
     } else {
-        CUmodule module;
-        CHECK_EQ(err = cuModuleLoadDataEx(&module, ptx_, 0, 0, 0), CUDA_SUCCESS)
+        hipModule_t module;
+        CHECK_EQ(err = hipModuleLoadDataEx(&module, ptx_, 0, 0, 0), CUDA_SUCCESS)
             << "CudaError: " << err;
-        CHECK_EQ(err = cuModuleGetFunction(&func, module, name_.c_str()), CUDA_SUCCESS)
+        CHECK_EQ(err = hipModuleGetFunction(&func, module, name_.c_str()), CUDA_SUCCESS)
             << "CudaError: " << err;
         module_[dev_id] = module;
         func_[dev_id] = func;

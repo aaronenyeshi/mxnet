@@ -6,11 +6,13 @@
 #ifndef MXNET_COMMON_CUDA_UTILS_H_
 #define MXNET_COMMON_CUDA_UTILS_H_
 
+
 #include <dmlc/logging.h>
 #include <mshadow/base.h>
+
 #if MXNET_USE_CUDA
-#include <hip/hip_runtime.h>
 #include <hip-wrappers.h> // dummy include file placed in /opt/rocm/include
+#include <hip/hip_runtime.h>
 #include <hipblas.h>
 #include <hiprng.h>
 
@@ -154,9 +156,9 @@ inline const char* HiprngGetErrorString(hiprngStatus_t status) {
 #endif  // MXNET_USE_CUDNN
 
 // Overload atomicAdd to work for floats on all architectures
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 600
-// From CUDA Programming Guide
-static inline  __device__  void atomicAdd(double *address, double val) {
+//#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 600
+#if (__HIP_DEVICE_COMPILE__) && (__HIP_ARCH_HAS_GLOBAL_INT64_ATOMICS__)
+static inline __device__  void atomicAdd(double *address, double val) {
   unsigned long long* address_as_ull =                  // NOLINT(*)
     reinterpret_cast<unsigned long long*>(address);     // NOLINT(*)
   unsigned long long old = *address_as_ull;             // NOLINT(*)
@@ -176,7 +178,8 @@ static inline  __device__  void atomicAdd(double *address, double val) {
 // Overload atomicAdd for half precision
 // Taken from:
 // https://github.com/torch/cutorch/blob/master/lib/THC/THCAtomics.cuh
-#if defined(__CUDA_ARCH__)
+//#if defined(__CUDA_ARCH__)
+#if (__HIP_DEVICE_COMPILE__)
 static inline __device__ void atomicAdd(mshadow::half::half_t *address,
                                         mshadow::half::half_t val) {
   unsigned int *address_as_ui =

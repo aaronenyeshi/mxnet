@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*!
  * Copyright (c) 2015 by Contributors
  * \file pad.cu
@@ -56,9 +57,10 @@ inline void image_pad_edge(Tensor<gpu, 4, DType> dst,
   dim3 dimGrid(xGridSize, dst.size(1), dst.size(0));
   CheckLaunchParam(dimGrid, dimBlock, "Pad");
   hipStream_t stream = Stream<gpu>::GetStream(dst.stream_);
-  image_2d_pad_edge_kernel<kBaseThreadBits,
+  /*image_2d_pad_edge_kernel<kBaseThreadBits,
                            DType><<<dimGrid, dimBlock, 0, stream>>>(dst, src,
-                                                                    padT, padL);
+                                                                    padT, padL);*/
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(image_2d_pad_edge_kernel<kBaseThreadBits,DType>), dim3(dimGrid), dim3(dimBlock), 0, stream,dst, src,padT, padL);
 }
 
 template <int n_bits, typename DType>
@@ -83,7 +85,9 @@ __global__ void image_2d_pad_edge_grad_kernel(
   int inputPointY = min(max(padT, outputPointY), grad_in.size(2) + padT - 1) -
                     oStartY + iStartY;
   DType valueToCopy = grad_out[batch][plane][outputPointY][outputPointX];
-  atomicAdd(&grad_in[batch][plane][inputPointY][inputPointX], valueToCopy);
+  #if defined(__HIP_PLATFORM_NVCC__)
+   atomicAdd(&grad_in[batch][plane][inputPointY][inputPointX], valueToCopy); //TODO. Fix compilation issue for HCC
+  #endif
 }
 
 template <typename DType>
@@ -97,9 +101,10 @@ inline void image_pad_edge_grad(Tensor<gpu, 4, DType> grad_in,
   dim3 dimGrid(xGridSize, grad_out.size(1), grad_out.size(0));
   CheckLaunchParam(dimGrid, dimBlock, "Pad");
   hipStream_t stream = Stream<gpu>::GetStream(grad_out.stream_);
-  image_2d_pad_edge_grad_kernel<kBaseThreadBits,
+ /* image_2d_pad_edge_grad_kernel<kBaseThreadBits,
                                 DType><<<dimGrid, dimBlock, 0, stream>>>(
-      grad_in, grad_out, padT, padL);
+      grad_in, grad_out, padT, padL);*/
+   hipLaunchKernelGGL(HIP_KERNEL_NAME(image_2d_pad_edge_grad_kernel<kBaseThreadBits,DType>), dim3(dimGrid), dim3(dimBlock), 0, stream,grad_in, grad_out,padT, padL);
 }
 
 // Case 2: Constant Padding
@@ -144,9 +149,10 @@ inline void image_pad_constant(Tensor<gpu, 4, DType> dst,
   dim3 dimGrid(xGridSize, dst.size(1), dst.size(0));
   CheckLaunchParam(dimGrid, dimBlock, "Pad");
   hipStream_t stream = Stream<gpu>::GetStream(dst.stream_);
-  image_2d_pad_constant_kernel<kBaseThreadBits,
+/*  image_2d_pad_constant_kernel<kBaseThreadBits,
                                DType><<<dimGrid, dimBlock, 0, stream>>>(
-      dst, src, padT, padL, constant);
+      dst, src, padT, padL, constant);*/
+   hipLaunchKernelGGL(HIP_KERNEL_NAME(image_2d_pad_constant_kernel<kBaseThreadBits,DType>), dim3(dimGrid), dim3(dimBlock), 0, stream,dst, src,padT, padL,constant);
 }
 
 template <int n_bits, typename DType>
@@ -180,9 +186,10 @@ inline void image_pad_constant_grad(Tensor<gpu, 4, DType> grad_in,
   dim3 dimGrid(xGridSize, grad_in.size(1), grad_in.size(0));
   CheckLaunchParam(dimGrid, dimBlock, "Pad");
   hipStream_t stream = Stream<gpu>::GetStream(grad_in.stream_);
-  image_2d_pad_constant_grad_kernel<kBaseThreadBits,
+/*  image_2d_pad_constant_grad_kernel<kBaseThreadBits,
                                     DType><<<dimGrid, dimBlock, 0, stream>>>(
-      grad_in, grad_out, padT, padL);
+      grad_in, grad_out, padT, padL);*/
+   hipLaunchKernelGGL(HIP_KERNEL_NAME(image_2d_pad_constant_grad_kernel<kBaseThreadBits,DType>), dim3(dimGrid), dim3(dimBlock), 0, stream,grad_in, grad_out,padT, padL);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -237,9 +244,10 @@ inline void image_pad_edge(Tensor<gpu, 5, DType> dst,
   dim3 dimGrid(xGridSize, dst.size(1), dst.size(0));
   CheckLaunchParam(dimGrid, dimBlock, "Pad");
   hipStream_t stream = Stream<gpu>::GetStream(dst.stream_);
-  image_3d_pad_edge_kernel<kBaseThreadBits,
+/*  image_3d_pad_edge_kernel<kBaseThreadBits,
                            DType><<<dimGrid, dimBlock, 0, stream>>>(
-      dst, src, padF, padT, padL);
+      dst, src, padF, padT, padL);*/
+   hipLaunchKernelGGL(HIP_KERNEL_NAME(image_3d_pad_edge_kernel<kBaseThreadBits,DType>), dim3(dimGrid), dim3(dimBlock), 0, stream,dst,src,padF,padT, padL);
 }
 
 template <int n_bits, typename DType>
@@ -271,8 +279,9 @@ __global__ void image_3d_pad_edge_grad_kernel(
                     oStartZ + iStartZ;
   DType valueToCopy =
       grad_out[batch][plane][outputPointZ][outputPointY][outputPointX];
-  atomicAdd(&grad_in[batch][plane][inputPointZ][inputPointY][inputPointX],
-            valueToCopy);
+  #if defined(__HIP_PLATFORM_NVCC__)
+   atomicAdd(&grad_in[batch][plane][inputPointZ][inputPointY][inputPointX],valueToCopy); //TODO. Fix compilation issue for HCC
+  #endif
 }
 
 template <typename DType>
@@ -288,9 +297,10 @@ inline void image_pad_edge_grad(Tensor<gpu, 5, DType> grad_in,
   dim3 dimGrid(xGridSize, grad_out.size(1), grad_out.size(0));
   CheckLaunchParam(dimGrid, dimBlock, "Pad");
   hipStream_t stream = Stream<gpu>::GetStream(grad_out.stream_);
-  image_3d_pad_edge_grad_kernel<kBaseThreadBits,
+/*  image_3d_pad_edge_grad_kernel<kBaseThreadBits,
                                 DType><<<dimGrid, dimBlock, 0, stream>>>(
-      grad_in, grad_out, padF, padT, padL);
+      grad_in, grad_out, padF, padT, padL);*/
+ hipLaunchKernelGGL(HIP_KERNEL_NAME(image_3d_pad_edge_grad_kernel<kBaseThreadBits,DType>), dim3(dimGrid), dim3(dimBlock), 0, stream,grad_in, grad_out,padF,padT, padL);
 }
 
 // Case 2: Constant Padding
@@ -345,9 +355,11 @@ inline void image_pad_constant(Tensor<gpu, 5, DType> dst,
   dim3 dimGrid(xGridSize, dst.size(1), dst.size(0));
   CheckLaunchParam(dimGrid, dimBlock, "Pad");
   hipStream_t stream = Stream<gpu>::GetStream(dst.stream_);
-  image_3d_pad_constant_kernel<kBaseThreadBits,
+/*  image_3d_pad_constant_kernel<kBaseThreadBits,
                                DType><<<dimGrid, dimBlock, 0, stream>>>(
-      dst, src, padF, padT, padL, constant);
+      dst, src, padF, padT, padL, constant);*/
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(image_3d_pad_constant_kernel<kBaseThreadBits,DType>), dim3(dimGrid), dim3(dimBlock), 0, stream,dst, src,padF,padT, padL,constant);
+
 }
 
 template <int n_bits, typename DType>
@@ -387,9 +399,11 @@ inline void image_pad_constant_grad(Tensor<gpu, 5, DType> grad_in,
   dim3 dimGrid(xGridSize, grad_in.size(1), grad_in.size(0));
   CheckLaunchParam(dimGrid, dimBlock, "Pad");
   hipStream_t stream = Stream<gpu>::GetStream(grad_in.stream_);
-  image_3d_pad_constant_grad_kernel<kBaseThreadBits,
+/*  image_3d_pad_constant_grad_kernel<kBaseThreadBits,
                                     DType><<<dimGrid, dimBlock, 0, stream>>>(
-      grad_in, grad_out, padF, padT, padL);
+      grad_in, grad_out, padF, padT, padL);*/
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(image_3d_pad_constant_grad_kernel<kBaseThreadBits,DType>), dim3(dimGrid), dim3(dimBlock), 0, stream,grad_in, grad_out,padF,padT, padL);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
