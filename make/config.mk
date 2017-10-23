@@ -50,6 +50,8 @@ USE_CUDA = 1
 # if you have already add them to environment variable, leave it as NONE
 ifeq ($(HIP_PLATFORM), nvcc)
 	USE_CUDA_PATH = /usr/local/cuda
+else
+	USE_CUDA_PATH = NONE
 endif
 
 # whether use CuDNN R3 library
