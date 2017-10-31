@@ -13,7 +13,7 @@
 #if MXNET_USE_CUDA
 #include <hip-wrappers.h> // dummy include file placed in /opt/rocm/include
 #include <hip/hip_runtime.h>
-#include <hipblas.h>
+#include <rocblas.h>
 #include <hiprng.h>
 
 namespace mxnet {
@@ -25,30 +25,26 @@ namespace cuda {
  * \param error The error.
  * \return String representation.
  */
-inline const char* HipblasGetErrorString(hipblasStatus_t error) {
+inline const char* rocblasGetErrorString(rocblas_status error) {
   switch (error) {
-  case HIPBLAS_STATUS_SUCCESS:
-    return "HIPBLAS_STATUS_SUCCESS";
-  case HIPBLAS_STATUS_NOT_INITIALIZED:
-    return "HIPBLAS_STATUS_NOT_INITIALIZED";
-  case HIPBLAS_STATUS_ALLOC_FAILED:
-    return "HIPBLAS_STATUS_ALLOC_FAILED";
-  case HIPBLAS_STATUS_INVALID_VALUE:
-    return "HIPBLAS_STATUS_INVALID_VALUE";
-//  case HIPBLAS_STATUS_ARCH_MISMATCH: // NOT SUPPORTED YET
-//    return "HIPBLAS_STATUS_ARCH_MISMATCH";
-  case HIPBLAS_STATUS_MAPPING_ERROR:
-    return "HIPBLAS_STATUS_MAPPING_ERROR";
-  case HIPBLAS_STATUS_EXECUTION_FAILED:
-    return "HIPBLAS_STATUS_EXECUTION_FAILED";
-  case HIPBLAS_STATUS_INTERNAL_ERROR:
-    return "HIPBLAS_STATUS_INTERNAL_ERROR";
-  case HIPBLAS_STATUS_NOT_SUPPORTED:
-    return "HIPBLAS_STATUS_NOT_SUPPORTED";
+  case rocblas_status_success:
+    return "rocblas_status_success";
+  case rocblas_status_invalid_handle :
+    return "rocblas_status_invalid_handle";
+  case rocblas_status_not_implemented:
+    return "rocblas_status_not_implemented";
+  case rocblas_status_invalid_pointer :
+    return "rocblas_status_invalid_pointer";
+  case rocblas_status_invalid_size:
+    return "rocblas_status_invalid_size";
+  case rocblas_status_memory_error :
+    return "rocblas_status_memory_error";
+  case rocblas_status_internal_error:
+    return "rocblas_status_internal_error";
   default:
     break;
   }
-  return "Unknown hipBLAS status";
+  return "Unknown rocBLAS status";
 }
 
 /*!
@@ -123,9 +119,9 @@ inline const char* HiprngGetErrorString(hiprngStatus_t status) {
  */
 #define HIPBLAS_CALL(func)                                       \
   {                                                             \
-    hipblasStatus_t e = (func);                                  \
-    CHECK_EQ(e, HIPBLAS_STATUS_SUCCESS)                          \
-        << "hipBLAS: " << common::cuda::HipblasGetErrorString(e); \
+    rocblas_status e = (func);                                  \
+    CHECK_EQ(e, rocblas_status_success)                          \
+        << "rocBLAS: " << common::cuda::rocblasGetErrorString(e); \
   }
 
 /*!

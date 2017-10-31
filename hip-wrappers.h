@@ -6,7 +6,7 @@
 #define HIPWRAPPERS_H
 #pragma once
 
-#include <hipblas.h>
+#include <rocblas.h>
 #include <hiprng.h>
 #include "hip/hip_runtime.h"
 #include "hip/hip_fp16.h"
@@ -20,8 +20,6 @@ typedef struct {
    unsigned short x;
 }__half;
 #endif
-
-
 
 
 typedef enum hipDataType_t
@@ -42,45 +40,23 @@ typedef enum hipDataType_t
     HIP_C_32U= 13  /* complex as a pair of unsigned int numbers */
 } hipDataType;
 
-typedef enum {
-    HIPBLAS_POINTER_MODE_HOST   = 0,
-    HIPBLAS_POINTER_MODE_DEVICE = 1
-} hipblasPointerMode_t;
 
-
-hipblasStatus_t hipblasSetPointerMode (hipblasHandle_t handle, hipblasPointerMode_t mode);
-
-hipblasStatus_t hipblasHgemm    (hipblasHandle_t handle, 
-                               hipblasOperation_t transa,
-                               hipblasOperation_t transb, 
-                               int m,
-                               int n,
-                               int k,
-                               const __half *alpha, /* host or device pointer */ 
-                               const __half *A, 
-                               int lda,
-                               const __half *B,
-                               int ldb, 
-                               const __half *beta, /* host or device pointer */ 
-                               __half *C,
-                               int ldc);             
-
-hipblasStatus_t hipblasSgemmEx  (hipblasHandle_t handle, 
-                                 hipblasOperation_t transa,
-                                 hipblasOperation_t transb, 
+rocblas_status rocblas_sgemmEx  (rocblas_handle handle, 
+                                 rocblas_operation transa,
+                                 rocblas_operation transb,
                                  int m,
                                  int n,
                                  int k,
-                                 const float *alpha, /* host or device pointer */  
-                                 const void *A, 
+                                 const float *alpha, /* host or device pointer */
+                                 const void *A,
                                  hipDataType Atype,
                                  int lda,
                                  const void *B,
                                  hipDataType Btype,
-                                 int ldb, 
-                                 const float *beta, /* host or device pointer */  
+                                 int ldb,
+                                 const float *beta, /* host or device pointer */
                                  void *C,
                                  hipDataType Ctype,
-                                 int ldc); 
+                                 int ldc);
  
 #endif //HIPWRAPPERS_H

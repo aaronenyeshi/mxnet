@@ -22,6 +22,8 @@ ifneq ($(USE_OPENMP), 1)
 	export NO_OPENMP = 1
 endif
 
+HIP_PLATFORM := $(shell hipconfig -P)
+
 # use customized config file
 include $(config)
 
@@ -50,11 +52,10 @@ else
 	CFLAGS += -O3
 endif
 
-HIP_PLATFORM := $(shell hipconfig -P)
 ifeq ($(HIP_PLATFORM), hcc)
-	HIPINCLUDE += -I../Thrust
+	HIPINCLUDE += -I../../Thrust
 endif
-HIPINCLUDE += -I. -I/opt/rocm/hcblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include
+HIPINCLUDE += -I. -I/opt/rocm/rocblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include
 CFLAGS     += $(HIPINCLUDE) -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
 LDFLAGS    =  -pthread $(MSHADOW_LDFLAGS) $(DMLC_LDFLAGS)
 
@@ -66,7 +67,7 @@ ifeq ($(HIP_PLATFORM), nvcc)
 else ifeq ($(HIP_PLATFORM), hcc)
 	CXXFLAGS    = -std=c++11
 	HIPCCFLAGS  = $(CFLAGS)
-	LINKER      = $(NVCC)
+	LINKER      = $(NVCC) $(CUDA_ARCH)
 endif
 ifeq ($(DEBUG), 1)
 	NVCCFLAGS = $(CXXFLAGS) -Xcompiler -D_FORCE_INLINES -g -G -O0 $(CCBINCLUDES) $(MSHADOW_NVCCFLAGS)
@@ -215,14 +216,15 @@ ifeq ($(USE_CUDA), 1)
 	CFLAGS += -I$(ROOTDIR)/cub-hip
 	ALL_DEP += $(CUOBJ) $(EXTRA_CUOBJ) $(PLUGIN_CUOBJ)
 	LDFLAGS += -L/opt/rocm/hip/lib -lhip_hcc
-	LDFLAGS += -L/opt/rocm/hcblas/lib -lhipblas_hcc
-	LDFLAGS += -L/opt/rocm/hcrng/lib -lhiprng_hcc
-	LDFLAGS += -L/opt/rocm/hcfft/lib -lhipfft_hcc
 	ifneq (, $(findstring nvcc, $(HIP_PLATFORM)))
-		LDFLAGS += -L/opt/rocm/hcblas/lib -lhipblas
-		LDFLAGS += -L/opt/rocm/hcrng/lib -lhcrng
-		LDFLAGS += -L/opt/rocm/hcrng/lib -lhcfft
+		LDFLAGS += -L/opt/rocm/rocblas/lib -lrocblas-hcc
+		LDFLAGS += -L/opt/rocm/hcrng/lib -lhiprng_hcc
+		LDFLAGS += -L/opt/rocm/hcfft/lib -lhcfft
 		LDFLAGS += -lcudart -lcuda -lcufft -lcublas
+	else
+		LDFLAGS += -L/opt/rocm/rocblas/lib  -lrocblas-hcc
+		LDFLAGS += -L/opt/rocm/hcrng/lib   -lhiprng_hcc
+		LDFLAGS += -L/opt/rocm/hcfft/lib   -lhipfft_hcc
 	endif
 
 	SCALA_PKG_PROFILE := $(SCALA_PKG_PROFILE)-gpu
@@ -279,7 +281,7 @@ lib/libmxnet.a: $(ALLX_DEP)
 
 lib/libmxnet.so: $(ALLX_DEP)
 	 @mkdir -p $(@D)
-	 $(LINKER) $(CFLAGS) $(CUDA_ARCH) -shared -o $@ $(filter-out %libnnvm.a, $(filter %.o %.a, $^)) $(LDFLAGS) \
+	 $(LINKER) $(HIPFLAGS) $(CFLAGS) -shared -o $@ $(filter-out %libnnvm.a, $(filter %.o %.a, $^)) $(LDFLAGS) \
 	 -Wl,${WHOLE_ARCH} $(filter %libnnvm.a, $^) -Wl,${NO_WHOLE_ARCH}
 
 $(PS_PATH)/build/libps.a: PSLITE
@@ -301,7 +303,7 @@ bin/im2rec: tools/im2rec.cc $(ALLX_DEP)
 
 $(BIN) :
 	@mkdir -p $(@D)
-	$(LINKER) $(HIPFLAGS) $(CFLAGS) $(CUDA_ARCH) -std=c++11  -o $@ $(filter %.cpp %.o %.c %.a %.cc, $^) $(LDFLAGS)
+	$(LINKER) $(HIPFLAGS) $(CFLAGS) -std=c++11  -o $@ $(filter %.cpp %.o %.c %.a %.cc, $^) $(LDFLAGS)
 
 # CPP Package
 ifeq ($(USE_CPP_PACKAGE), 1)
