@@ -62,8 +62,8 @@ Features
 * Cloud-friendly and directly compatible with S3, HDFS, and Azure
 
 
-Installation Guide
--------------------
+Installation Guide for HIP Port
+-------------------------------
 
 ***Generic Installation Steps:***
 
