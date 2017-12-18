@@ -61,77 +61,112 @@ Features
 * Support for Python, R, C++ and Julia
 * Cloud-friendly and directly compatible with S3, HDFS, and Azure
 
+
+Installation Guide
+-------------------
+
 ***Generic Installation Steps:***
-Install the system requirement following the ROCm’s installation guide
+
+Install the system requirement following the [ROCm’s installation guide](http://rocm-documentation.readthedocs.io/en/latest/Installation_Guide/Installation-Guide.html)
 
 ***Installation Steps on HCC and NVCC PLATFORM***
+
 ***Prerequisites*** 
-Install CUDA 8.0 following the NVIDIA’s installation guide to setup MXNet with GPU support 
+
+Install CUDA 8.0 following the NVIDIA’s [installation guide](http://docs.nvidia.com/cuda/cuda-installation-guide-linux/) to setup MXNet with GPU support 
+
 ***Note:*** Make sure to add CUDA install path to LD_LIBRARY_PATH.
 Example - export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH
 
 ***Building MXNet from source is a 2 step process.***
+
 1. Build the MXNet core shared library, libmxnet.so, from the C++ sources.
 2. Build the language specific bindings. Example - Python bindings, Scala bindings.
+
 ***Minimum Requirements***
-1.  GCC 4.8 or later to compile C++ 11.
-2.  GNU Make
+
+1.  [GCC 4.8](https://gcc.gnu.org/gcc-4.8/) or later to compile C++ 11.
+2.  [GNU Make](https://www.gnu.org/software/make/)
 
 ***ROCm installation***
+
 ***Step 1:*** Add the ROCm apt repository
 For Debian based systems, like Ubuntu, configure the Debian ROCm repository as follows:
+```
 $ wget -qO - http://repo.radeon.com/rocm/apt/debian/rocm.gpg.key | sudo apt-key add -
 $ sudo sh -c 'echo deb [arch=amd64] http://repo.radeon.com/rocm/apt/debian/ xenial main > /etc/apt/sources.list.d/rocm.list'
+```
 ***Step 2:*** Install or Update
 Next, update the apt-get repository list and install/update the rocm package:
-Warning: Before proceeding, make sure to completely uninstall any previous ROCm package:
+Warning: Before proceeding, make sure to completely [uninstall any previous ROCm package](https://github.com/RadeonOpenCompute/ROCm#removing-pre-release-packages)
 
-
-
+```
 $ sudo apt-get update
 $ sudo apt-get install rocm
-Step 3 Install dependent libraries
+```
+
+***Step 3:*** Install dependent libraries
+```
 $ sudo apt-get install rocm-device-libs rocblas rocm-libs 
-For detailed installation steps refer the given installation link
+```
+For detailed installation steps refer the given [installation link](https://github.com/RadeonOpenCompute/ROCm)
 
 ***Build the MXNet core shared library***
-***Step 1 :***Install build tools and git.
+
+***Step 1 :*** Install build tools and git.
+```
 $ sudo apt-get update
 $ sudo apt-get install -y build-essential git
-***Step 2 :***Install OpenCV.
+```
+
+***Step 2 :*** Install [OpenCV](https://opencv.org/)
+
 MXNet uses OpenCV for efficient image loading and augmentation operations.
+```
 $ sudo apt-get install -y libopencv-dev
+```
 ***Step 3 :*** To build MXNet with Thrust
+```
 $ git clone --recursive https://github.com/ROCmSoftwarePlatform/Thrust
+```
 Add thrust path to the Makefile,
+```
 ifeq ($(HIP_PLATFORM), hcc)
                HIPINCLUDE += -I<Root path of Thrust>
                <Example: HIPINCLUDE += -I../Thrust>
 endif
+```
 ***Step 4 :*** Download MXNet sources and build MXNet core shared library.
+```
 $ git clone --recursive https://github.com/ROCmSoftwarePlatform/mxnet
 $ cd mxnet
-
+```
 To compile on HCC PLATFORM:	
+```
 $ export HIP_PLATFORM=hcc
 $ make -jn (n = no of cores)
+```
 To compile on NVCC PLATFORM:	
-$ export HIP_PLATFORM=hcc
+```
+$ export HIP_PLATFORM=nvcc
 $ make -jn (n = no of cores) 
+```
 ***Note:*** 
+
 1. USE_OPENCV, USE_BLAS, USE_CUDA, USE_CUDA_PATH are make file flags to set compilation options to use OpenCV, CUDA libraries. You can explore and use more compilation options in make/config.mk. Make sure to set USE_CUDA_PATH to right CUDA installation path. In most cases it is - /usr/local/cuda.
 2. MXNet uses rocBLAS, hcFFT, hcRNG  and lapack libraries for accelerated numerical computations. cuDNN is not enabled as it is being migrated to Miopen.
 
 ***Install the MXNet Python binding***
+
 ***Step 1 :*** Install prerequisites - python, setup-tools, python-pip and numpy.
+```
 $ sudo apt-get install -y python-dev python-setuptools python-numpy python-pip
+```
 ***Step 2 :*** Install the MXNet Python binding.
+```
 $ cd python
-$ pip install --upgrade pip
-$ pip install -e 
-Note that the -e flag is optional. It is equivalent to –editable and means that if you edit the source files, these changes will be reflected in the package installed.
-
-
+$ sudo python setup.py install 
+```
 
 Ask Questions
 -------------
