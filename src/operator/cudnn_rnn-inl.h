@@ -70,8 +70,8 @@ class CuDNNRNNOp : public Operator {
       CUDNN_CALL(miopenDestroyTensorDescriptor(dhy_desc_));
       CUDNN_CALL(miopenDestroyTensorDescriptor(dcy_desc_));
 
-      /*CUDNN_CALL(miopenDestroyTensorDescriptor(w_desc_));
-      CUDNN_CALL(cudnnDestroyRNNDescriptor(rnn_desc_));
+      CUDNN_CALL(miopenDestroyTensorDescriptor(w_desc_));
+      /*CUDNN_CALL(cudnnDestroyRNNDescriptor(rnn_desc_));
       CUDNN_CALL(cudnnDestroyDropoutDescriptor(dropout_desc_));*/ //TODO MIopen does not support RNN and Dropout
       Storage::Get()->Free(dropout_states_);
       Storage::Get()->Free(reserve_space_);
@@ -326,34 +326,35 @@ class CuDNNRNNOp : public Operator {
         strideA[0] = dimA[2] * dimA[1];
         strideA[1] = dimA[2];
         strideA[2] = 1;
-
-        /*CUDNN_CALL(cudnnSetTensorNdDescriptor(x_vec[i],
-                                              dtype_,
+         CUDNN_CALL(miopenSetTensorDescriptor(x_vec[i],
+                                              dtype_,// Currently only miopenFloat is implemented
                                               3,
                                               dimA,
                                               strideA));
-        CUDNN_CALL(cudnnSetTensorNdDescriptor(dx_vec[i],
-                                              dtype_,
+                                              strideA));
+
+        CUDNN_CALL(miopenSetTensorDescriptor(dx_vec[i],
+                                              dtype_, // Currently only miopenFloat is implemented
                                               3,
                                               dimA,
-                                              strideA));*/ //TODO Miopen doesnt support Nd Descriptor
+                                              strideA));
         dimA[0] = param_.batch_size_;
         dimA[1] = param_.bidirectional ? param_.state_size * 2 : param_.state_size;
         dimA[2] = 1;
         strideA[0] = dimA[2] * dimA[1];
         strideA[1] = dimA[2];
         strideA[2] = 1;
-
-        /*CUDNN_CALL(cudnnSetTensorNdDescriptor(y_vec[i],
-                                             dtype_,
+        CUDNN_CALL(miopenSetTensorDescriptor(y_vec[i],
+                                             dtype_,// Currently only miopenFloat is implemented
                                              3,
                                              dimA,
                                              strideA));
-        CUDNN_CALL(cudnnSetTensorNdDescriptor(dy_vec[i],
-                                              dtype_,
+
+       CUDNN_CALL(miopenSetTensorDescriptor(dy_vec[i],
+                                              dtype_,// Currently only miopenFloat is implemented
                                               3,
                                               dimA,
-                                              strideA));*/ //TODO Miopen doesnt support Nd Descriptor
+                                              strideA));
       }
       x_desc_vec_ = x_vec;
       y_desc_vec_ = y_vec;
@@ -377,46 +378,46 @@ class CuDNNRNNOp : public Operator {
       CUDNN_CALL(miopenCreateTensorDescriptor(&dhy_desc_));
       CUDNN_CALL(miopenCreateTensorDescriptor(&dcy_desc_));
 
-      /*CUDNN_CALL(cudnnSetTensorNdDescriptor(hx_desc_,
-                                            dtype_,
+      CUDNN_CALL(miopenSetTensorDescriptor(hx_desc_,
+                                            dtype_,//Currently only miopenFloat is implemented
                                             3,
                                             dimA,
                                             strideA));
-      CUDNN_CALL(cudnnSetTensorNdDescriptor(cx_desc_,
-                                            dtype_,
+      CUDNN_CALL(miopenSetTensorDescriptor(cx_desc_,
+                                            dtype_,//Currently only miopenFloat is implemented
                                             3,
                                             dimA,
                                             strideA));
-      CUDNN_CALL(cudnnSetTensorNdDescriptor(hy_desc_,
-                                            dtype_,
+      CUDNN_CALL(miopenSetTensorDescriptor(hy_desc_,
+                                            dtype_, //Currently only miopenFloat is implemented
                                             3,
                                             dimA,
                                             strideA));
-      CUDNN_CALL(cudnnSetTensorNdDescriptor(cy_desc_,
-                                            dtype_,
+      CUDNN_CALL(miopenSetTensorDescriptor(cy_desc_,
+                                            dtype_, // Currently only miopenFloat is implemented
                                             3,
                                             dimA,
                                             strideA));
-      CUDNN_CALL(cudnnSetTensorNdDescriptor(dhx_desc_,
-                                            dtype_,
+      CUDNN_CALL(miopenSetTensorDescriptor(dhx_desc_,
+                                            dtype_, // Currently only miopenFloat is implemented
                                             3,
                                             dimA,
                                             strideA));
-      CUDNN_CALL(cudnnSetTensorNdDescriptor(dcx_desc_,
-                                            dtype_,
+      CUDNN_CALL(miopenSetTensorDescriptor(dcx_desc_,
+                                            dtype_,// Currently only miopenFloat is implemented
                                             3,
                                             dimA,
                                             strideA));
-      CUDNN_CALL(cudnnSetTensorNdDescriptor(dhy_desc_,
-                                            dtype_,
+      CUDNN_CALL(miopenSetTensorDescriptor(dhy_desc_,
+                                            dtype_, // Currently only miopenFloat is implemented
                                             3,
                                             dimA,
                                             strideA));
-      CUDNN_CALL(cudnnSetTensorNdDescriptor(dcy_desc_,
-                                            dtype_,
+      CUDNN_CALL(miopenSetTensorDescriptor(dcy_desc_,
+                                            dtype_, // Currently only miopenFloat is implemented
                                             3,
                                             dimA,
-                                            strideA));*/ //TODO Miopen does not support Nd
+                                            strideA));
       // Create Dropout descriptors
       /*CUDNN_CALL(cudnnCreateDropoutDescriptor(&dropout_desc_));
       CUDNN_CALL(cudnnDropoutGetStatesSize(s->dnn_handle_,
