@@ -331,7 +331,6 @@ class CuDNNRNNOp : public Operator {
                                               3,
                                               dimA,
                                               strideA));
-                                              strideA));
 
         CUDNN_CALL(miopenSetTensorDescriptor(dx_vec[i],
                                               dtype_, // Currently only miopenFloat is implemented
