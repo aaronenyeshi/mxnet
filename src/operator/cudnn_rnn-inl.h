@@ -26,26 +26,26 @@ class CuDNNRNNOp : public Operator {
     init_cudnn_ = false;
     dtype_ = mshadow::DataType<DType>::kCudnnFlag;
     // Defaults
-    //input_mode_ = CUDNN_LINEAR_INPUT;  // Don't support this yet
+    input_mode_ = miopenRNNlinear;
     // RNN Mode
     switch (param_.mode) {
       case rnn_enum::kRnnRelu:
-        //mode_ = CUDNN_RNN_RELU;
+        mode_ =  miopenRNNRELU;
         break;
       case rnn_enum::kRnnTanh:
-        //mode_ = CUDNN_RNN_TANH;
+        mode_ = miopenRNNTANH;
         break;
       case rnn_enum::kLstm:
-        //mode_ = CUDNN_LSTM;
+        mode_ = miopenLSTM;
         break;
       case rnn_enum::kGru:
-        //mode_ = CUDNN_GRU;
+        mode_ = miopenGRU;
         break;
       default:
         LOG(FATAL) << "Not implmented";
     }
     // RNN Direction
-    //direction_ = param_.bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL; //TODO MIopen does not support RNN
+    direction_ = param_.bidirectional ? miopenRNNbidirection : miopenRNNunidirection;
     // Other
     if (param_.mode == rnn_enum::kLstm)
       param_.lstm_q_ = true;
@@ -71,8 +71,8 @@ class CuDNNRNNOp : public Operator {
       CUDNN_CALL(miopenDestroyTensorDescriptor(dcy_desc_));
 
       CUDNN_CALL(miopenDestroyTensorDescriptor(w_desc_));
-      /*CUDNN_CALL(cudnnDestroyRNNDescriptor(rnn_desc_));
-      CUDNN_CALL(cudnnDestroyDropoutDescriptor(dropout_desc_));*/ //TODO MIopen does not support RNN and Dropout
+      CUDNN_CALL(miopenDestroyRNNDescriptor(rnn_desc_));
+      /*CUDNN_CALL(cudnnDestroyDropoutDescriptor(dropout_desc_));*/ //TODO MIopen does not support Dropout
       Storage::Get()->Free(dropout_states_);
       Storage::Get()->Free(reserve_space_);
     }
@@ -124,7 +124,7 @@ class CuDNNRNNOp : public Operator {
       ctx.requested[rnn_enum::kTempSpace].get_space_typed<gpu, 1, DType>(
                               mshadow::Shape1(temp_size), s);
     if (ctx.is_train) {
-      /*CUDNN_CALL(cudnnRNNForwardTraining(s->dnn_handle_,
+      CUDNN_CALL(miopenRNNForwardTraining(s->dnn_handle_,
                                          rnn_desc_,
                                          param_.seq_length_,
                                          x_desc_vec_.data(),
@@ -144,10 +144,10 @@ class CuDNNRNNOp : public Operator {
                                          temp_space.dptr_,
                                          workspace_byte_,
                                          reserve_space_.dptr,
-                                         reserve_space_byte_));*/ // TODO MIopen does not support RNN and Dropout
+                                         reserve_space_byte_));
     } else {
       // inference mode
-      /*CUDNN_CALL(cudnnRNNForwardInference(s->dnn_handle_,
+      CUDNN_CALL(miopenRNNForwardInference(s->dnn_handle_,
                                           rnn_desc_,
                                           param_.seq_length_,
                                           x_desc_vec_.data(),
@@ -165,7 +165,7 @@ class CuDNNRNNOp : public Operator {
                                           cy_desc_,
                                           cy_ptr,
                                           temp_space.dptr_,
-                                          workspace_byte_));*/ // TODO MIopen does not support RNN and Dropout
+                                          workspace_byte_));
     }
   }
 
@@ -237,7 +237,7 @@ class CuDNNRNNOp : public Operator {
     Tensor<gpu, 1, DType> temp_space =
       ctx.requested[rnn_enum::kTempSpace].get_space_typed<gpu, 1, DType>(
                               mshadow::Shape1(temp_size), s);
-    /*CUDNN_CALL(cudnnRNNBackwardData(s->dnn_handle_,
+    CUDNN_CALL(miopenRNNBackwardData(s->dnn_handle_,
                                     rnn_desc_,
                                     param_.seq_length_,
                                     y_desc_vec_.data(),
@@ -264,7 +264,8 @@ class CuDNNRNNOp : public Operator {
                                     workspace_byte_,
                                     reserve_space_.dptr,
                                     reserve_space_byte_));
-    CUDNN_CALL(cudnnRNNBackwardWeights(s->dnn_handle_,
+
+    CUDNN_CALL(miopenRNNBackwardWeights(s->dnn_handle_,
                                        rnn_desc_,
                                        param_.seq_length_,
                                        x_desc_vec_.data(),
@@ -273,12 +274,12 @@ class CuDNNRNNOp : public Operator {
                                        hx.dptr_,
                                        y_desc_vec_.data(),
                                        y.dptr_,
-                                       temp_space.dptr_,
-                                       workspace_byte_,
                                        dw_desc_,
                                        dw.dptr_,
+                                       temp_space.dptr_,
+                                       workspace_byte_,
                                        reserve_space_.dptr,
-                                       reserve_space_byte_));*/ //TODO MIopen does not support RNN and Dropout
+                                       reserve_space_byte_));
   }
 
  private:
@@ -286,9 +287,9 @@ class CuDNNRNNOp : public Operator {
                    const std::vector<TBlob> &in_data,
                    const std::vector<TBlob> &out_data) {
     using namespace mshadow;
-    #if CUDNN_MAJOR >= 5
+   // #if CUDNN_MAJOR >= 5
     //format_ = CUDNN_TENSOR_NCHW; //TODO MIopen does not support
-    #endif
+    //#endif
     size_t in_expected = param_.lstm_q_ ? 4 : 3;
     size_t out_expected = param_.lstm_q_ ? 3 : 2;
     if (!param_.state_outputs)
@@ -420,7 +421,7 @@ class CuDNNRNNOp : public Operator {
       // Create Dropout descriptors
       /*CUDNN_CALL(cudnnCreateDropoutDescriptor(&dropout_desc_));
       CUDNN_CALL(cudnnDropoutGetStatesSize(s->dnn_handle_,
-                                           &dropout_byte_));*/ //TODO MIopen does not support RNN and Dropout
+                                           &dropout_byte_));*/ //TODO MIopen does not support Dropout
       dropout_size_ = dropout_byte_ / sizeof(DType);
       dropout_states_ = Storage::Get()->Alloc(dropout_byte_, Context::GPU());
       /*CUDNN_CALL(cudnnSetDropoutDescriptor(dropout_desc_,
@@ -428,56 +429,67 @@ class CuDNNRNNOp : public Operator {
                                            param_.p,  // keep probability
                                            dropout_states_.dptr,
                                            dropout_byte_,
-                                           seed_));*/ //MIopen does not support RNN and Dropout
+                                           seed_));*/ //MIopen does not support Dropout
       // RNN descriptors
-      /*CUDNN_CALL(cudnnCreateRNNDescriptor(&rnn_desc_));
-      CUDNN_CALL(cudnnSetRNNDescriptor(rnn_desc_,
+      CUDNN_CALL(miopenCreateRNNDescriptor(&rnn_desc_));
+     //TODO Need to recheck the input parameters.
+      CUDNN_CALL(miopenSetRNNDescriptor(rnn_desc_,
                                        param_.state_size,
                                        param_.num_layers,
-                                       dropout_desc_,
                                        input_mode_,
                                        direction_,
                                        mode_,
-                                       dtype_));*/ //TODO MIopen does not support RNN and Dropout
+                                       miopenRNNwithBias,
+                                       miopenRNNdefault,
+                                       dtype_));
       // Get temp space sizes
-      /*CUDNN_CALL(cudnnGetRNNWorkspaceSize(s->dnn_handle_,
+      CUDNN_CALL(miopenGetRNNWorkspaceSize(s->dnn_handle_,
                                           rnn_desc_,
                                           param_.seq_length_,
                                           x_desc_vec_.data(),
                                           &workspace_byte_));
-      CUDNN_CALL(cudnnGetRNNTrainingReserveSize(s->dnn_handle_,
+
+      CUDNN_CALL(miopenGetRNNTrainingReserveSize(s->dnn_handle_,
                                                 rnn_desc_,
                                                 param_.seq_length_,
                                                 x_desc_vec_.data(),
-                                                &reserve_space_byte_));*/ //TODO MIopen does not support RNN and Dropout
+                                                &reserve_space_byte_));
       workspace_size_ = workspace_byte_ / sizeof(DType);
       // Allocate the reserve space
       reserve_space_ = Storage::Get()->Alloc(reserve_space_byte_, Context::GPU());
 
       // Check that number of params are correct
       size_t cudnn_param_size;
-      /*CUDNN_CALL(cudnnGetRNNParamsSize(s->dnn_handle_,
+
+      CUDNN_CALL(miopenGetRNNParamsSize(s->dnn_handle_,
                                        rnn_desc_,
                                        x_desc_vec_[0],
                                        &cudnn_param_size,
-                                       dtype_));*/ // TODO MIopen does not support RNN and Dropout
+                                       dtype_));
       CHECK_EQ(w.shape_[0] * sizeof(DType), cudnn_param_size);
 
       // Set param descriptors
       CUDNN_CALL(miopenCreateTensorDescriptor(&w_desc_));
       CUDNN_CALL(miopenCreateTensorDescriptor(&dw_desc_));
       int dim_w[3] = {1, 1, 1};
+      int stride_w[3];
       dim_w[0] = w.shape_[0];
-      /*CUDNN_CALL(cudnnSetFilterNdDescriptor(w_desc_,
-                                            dtype_,
-                                            format_,
-                                            3,
-                                            dim_w));
-      CUDNN_CALL(cudnnSetFilterNdDescriptor(dw_desc_,
-                                            dtype_,
-                                            format_,
-                                            3,
-                                            dim_w));*/ //TODO MIopen does not support Nd
+      stride_w[0] = dim_w[2] * dim_w[1];
+      stride_w[1] = dim_w[2];
+      stride_w[2] = 1;
+
+
+      CUDNN_CALL(miopenSetTensorDescriptor(w_desc_,
+                                           dtype_,
+                                           3,
+                                           dim_w,
+                                           stride_w));
+
+      CUDNN_CALL(miopenSetTensorDescriptor(dw_desc_,
+                                           dtype_,
+                                           3,
+                                           dim_w,
+                                           stride_w));
 
       // Query weight layout
       // miopenTensorDescriptor_t m_desc;
@@ -519,11 +531,14 @@ class CuDNNRNNOp : public Operator {
 
   miopenDataType_t dtype_;
   bool init_cudnn_;
-  /*cudnnRNNDescriptor_t rnn_desc_;
-  cudnnRNNMode_t mode_;
-  cudnnDirectionMode_t direction_;
-  cudnnRNNInputMode_t input_mode_;
-  cudnnDropoutDescriptor_t dropout_desc_;*/ //TODO MIOpen does not support  Dropout, RNNs, and Divisive Normalization
+  /*
+  cudnnDropoutDescriptor_t dropout_desc_;*/ //TODO MIOpen does not support  Dropout
+
+  miopenRNNDescriptor_t rnn_desc_;
+  miopenRNNMode_t mode_;
+  miopenRNNDirectionMode_t direction_;
+  miopenRNNInputMode_t input_mode_;
+
   Storage::Handle dropout_states_, reserve_space_;
   uint64_t seed_ = 1337ull;
   size_t workspace_byte_, reserve_space_byte_, dropout_byte_;

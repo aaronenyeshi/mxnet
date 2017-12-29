@@ -119,7 +119,7 @@ class CuDNNDeconvolutionOp : public Operator {
 
     for (uint32_t g = 0; g < param_.num_group; ++g) {
       typename DataType<DType>::ScaleType alpha = 1.0f;
-      typename DataType<DType>::ScaleType alpha2 = 0.0f; //set to zero as per CUDNN and MIOpen documentation
+      typename DataType<DType>::ScaleType alpha2 = 1.0f; //set to zero as per CUDNN and MIOpen documentation
       typename DataType<DType>::ScaleType beta  = 0.0f;
 
 
@@ -157,12 +157,10 @@ class CuDNNDeconvolutionOp : public Operator {
                  backward_workspace_byte_));
   //    #endif
       if (!param_.no_bias) {
-        beta = 1.0f;
+        // beta = 1.0f;
         Tensor<gpu, 1, DType> bias = in_data[deconv::kBias].get<gpu, 1, DType>(s);
 //#if CUDNN_MAJOR >= 4
 #if CUDNN_MAJOR>=3 //TODO changed hip condition as there is no support for cudnnAddTensor with CUDNN_ADD_SAME_C option.
-        miopenTensorDescriptor_t b_desc_; //TODO .Temporarily fix .Temporarily defined
-        CUDNN_CALL(miopenCreateTensorDescriptor(&b_desc_)); //TODO .Temporarily defined
         // changed parameters order as per the documented functionality of the API
         CUDNN_CALL(miopenOpTensor(s->dnn_handle_,
                                   miopenTensorOpAdd,
@@ -170,16 +168,13 @@ class CuDNNDeconvolutionOp : public Operator {
                                   bias_desc_,
                                   bias.dptr_ + bias_offset_ * g,
                                   &alpha2,
-                                  b_desc_,
-                                  bias.dptr_ + bias_offset_ * g,// added as per CUDNN and MIOpen documentation and &alpha2 is                                                                   zero so can keep any value other than nullptr to avoid runtime errors.
+                                  out_desc_,
+                                  out_ptr + out_offset_ * g,
                                   &beta,
                                   out_desc_,
                                   out_ptr + out_offset_ * g));
-       CUDNN_CALL(miopenDestroyTensorDescriptor(b_desc_)); //TODO .Temporarily defined
 #endif
 /*#if CUDNN_MAJOR == 3
-        miopenTensorDescriptor_t b_desc_; //TODO .Temporarily fix .Temporarily defined
-        CUDNN_CALL(miopenCreateTensorDescriptor(&b_desc_)); //TODO .Temporarily defined
       //changed parameters order as per the documented functionality of the API
         CUDNN_CALL(miopenOpTensor(s->dnn_handle_,
                                   miopenTensorOpAdd,
@@ -187,8 +182,8 @@ class CuDNNDeconvolutionOp : public Operator {
                                   bias_desc_,
                                   bias.dptr_ + bias_offset_ * g,
                                   &alpha2,
-                                  b_desc_,
-                                  nullptr, //TODO .Temporary fix .Has to replace with valid data pointer
+                                  out_desc_,
+                                  out_ptr + out_offset_ * g,
                                   &beta,
                                   out_desc_,
                                   out_ptr + out_offset_ * g));
