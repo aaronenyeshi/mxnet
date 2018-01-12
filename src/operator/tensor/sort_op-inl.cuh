@@ -7,7 +7,7 @@
 #define MXNET_OPERATOR_TENSOR_SORT_OP_INL_CUH_
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
-#if !defined(USE_CUB) || (defined(_MSC_VER) && __CUDACC_VER__ != 80044)
+#if (defined(_MSC_VER) && __CUDACC_VER_BUILD__ != 80044)
 // Many CUDA compilers other than V8.0.44 crash on Windows 
 //#pragma warning("Potential crash on CUDA compiler detected. Switching sorting from CUB to Thrust")
 #pragma warning("Switching sorting from CUB to Thrust")

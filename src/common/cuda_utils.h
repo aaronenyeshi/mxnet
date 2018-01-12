@@ -13,8 +13,8 @@
 #if MXNET_USE_CUDA
 #include <hip-wrappers.h> // dummy include file placed in /opt/rocm/include
 #include <hip/hip_runtime.h>
-#include <rocblas.h>
-#include <hiprng.h>
+#include <hipblas.h>
+#include <hiprand.h>
 
 namespace mxnet {
 namespace common {
@@ -25,26 +25,30 @@ namespace cuda {
  * \param error The error.
  * \return String representation.
  */
-inline const char* rocblasGetErrorString(rocblas_status error) {
+inline const char* HipblasGetErrorString(hipblasStatus_t error) {
   switch (error) {
-  case rocblas_status_success:
-    return "rocblas_status_success";
-  case rocblas_status_invalid_handle :
-    return "rocblas_status_invalid_handle";
-  case rocblas_status_not_implemented:
-    return "rocblas_status_not_implemented";
-  case rocblas_status_invalid_pointer :
-    return "rocblas_status_invalid_pointer";
-  case rocblas_status_invalid_size:
-    return "rocblas_status_invalid_size";
-  case rocblas_status_memory_error :
-    return "rocblas_status_memory_error";
-  case rocblas_status_internal_error:
-    return "rocblas_status_internal_error";
+  case HIPBLAS_STATUS_SUCCESS:
+    return "HIPBLAS_STATUS_SUCCESS";
+  case HIPBLAS_STATUS_NOT_INITIALIZED:
+    return "HIPBLAS_STATUS_NOT_INITIALIZED";
+  case HIPBLAS_STATUS_ALLOC_FAILED:
+    return "HIPBLAS_STATUS_ALLOC_FAILED";
+  case HIPBLAS_STATUS_INVALID_VALUE:
+    return "HIPBLAS_STATUS_INVALID_VALUE";
+//  case HIPBLAS_STATUS_ARCH_MISMATCH: // NOT SUPPORTED YET
+//    return "HIPBLAS_STATUS_ARCH_MISMATCH";
+  case HIPBLAS_STATUS_MAPPING_ERROR:
+    return "HIPBLAS_STATUS_MAPPING_ERROR";
+  case HIPBLAS_STATUS_EXECUTION_FAILED:
+    return "HIPBLAS_STATUS_EXECUTION_FAILED";
+  case HIPBLAS_STATUS_INTERNAL_ERROR:
+    return "HIPBLAS_STATUS_INTERNAL_ERROR";
+  case HIPBLAS_STATUS_NOT_SUPPORTED:
+    return "HIPBLAS_STATUS_NOT_SUPPORTED";
   default:
     break;
   }
-  return "Unknown rocBLAS status";
+  return "Unknown hipBLAS status";
 }
 
 /*!
@@ -52,36 +56,36 @@ inline const char* rocblasGetErrorString(rocblas_status error) {
  * \param status The status.
  * \return String representation.
  */
-inline const char* HiprngGetErrorString(hiprngStatus_t status) {
+inline const char* HiprandGetErrorString(hiprandStatus_t status) {
   switch (status) {
-  case HIPRNG_STATUS_SUCCESS:
-    return "HIPRNG_STATUS_SUCCESS";
-  case HIPRNG_STATUS_VERSION_MISMATCH:
-    return "HIPRNG_STATUS_VERSION_MISMATCH";
-  case HIPRNG_STATUS_NOT_INITIALIZED:
-    return "HIPRNG_STATUS_NOT_INITIALIZED";
-  case HIPRNG_STATUS_ALLOCATION_FAILED:
-    return "HIPRNG_STATUS_ALLOCATION_FAILED";
-  case HIPRNG_STATUS_TYPE_ERROR:
-    return "HIPRNG_STATUS_TYPE_ERROR";
-  case HIPRNG_STATUS_OUT_OF_RANGE:
-    return "HIPRNG_STATUS_OUT_OF_RANGE";
-  case HIPRNG_STATUS_LENGTH_NOT_MULTIPLE:
-    return "HIPRNG_STATUS_LENGTH_NOT_MULTIPLE";
+  case HIPRAND_STATUS_SUCCESS:
+    return "HIPRAND_STATUS_SUCCESS";
+  case HIPRAND_STATUS_VERSION_MISMATCH:
+    return "HIPRAND_STATUS_VERSION_MISMATCH";
+  case HIPRAND_STATUS_NOT_INITIALIZED:
+    return "HIPRAND_STATUS_NOT_INITIALIZED";
+  case HIPRAND_STATUS_ALLOCATION_FAILED:
+    return "HIPRAND_STATUS_ALLOCATION_FAILED";
+  case HIPRAND_STATUS_TYPE_ERROR:
+    return "HIPRAND_STATUS_TYPE_ERROR";
+  case HIPRAND_STATUS_OUT_OF_RANGE:
+    return "HIPRAND_STATUS_OUT_OF_RANGE";
+  case HIPRAND_STATUS_LENGTH_NOT_MULTIPLE:
+    return "HIPRAND_STATUS_LENGTH_NOT_MULTIPLE";
 //  case HIPRNG_STATUS_DOUBLE_PRECISION_REQUIRED: // NOT SUPPORTED YET
 //    return "HIPRNG_STATUS_DOUBLE_PRECISION_REQUIRED";
-  case HIPRNG_STATUS_LAUNCH_FAILURE:
-    return "HIPRNG_STATUS_LAUNCH_FAILURE";
-  case HIPRNG_STATUS_PREEXISTING_FAILURE:
-    return "HIPRNG_STATUS_PREEXISTING_FAILURE";
-  case HIPRNG_STATUS_INITIALIZATION_FAILED:
-    return "HIPRNG_STATUS_INITIALIZATION_FAILED";
-  case HIPRNG_STATUS_ARCH_MISMATCH:
-    return "HIPRNG_STATUS_ARCH_MISMATCH";
-  case HIPRNG_STATUS_INTERNAL_ERROR:
-    return "HIPRNG_STATUS_INTERNAL_ERROR";
+  case HIPRAND_STATUS_LAUNCH_FAILURE:
+    return "HIPRAND_STATUS_LAUNCH_FAILURE";
+  case HIPRAND_STATUS_PREEXISTING_FAILURE:
+    return "HIPRAND_STATUS_PREEXISTING_FAILURE";
+  case HIPRAND_STATUS_INITIALIZATION_FAILED:
+    return "HIPRAND_STATUS_INITIALIZATION_FAILED";
+  case HIPRAND_STATUS_ARCH_MISMATCH:
+    return "HIPRAND_STATUS_ARCH_MISMATCH";
+  case HIPRAND_STATUS_INTERNAL_ERROR:
+    return "HIPRAND_STATUS_INTERNAL_ERROR";
   }
-  return "Unknown hipRNG status";
+  return "Unknown hipRAND status";
 }
 
 }  // namespace cuda
@@ -119,9 +123,9 @@ inline const char* HiprngGetErrorString(hiprngStatus_t status) {
  */
 #define HIPBLAS_CALL(func)                                       \
   {                                                             \
-    rocblas_status e = (func);                                  \
-    CHECK_EQ(e, rocblas_status_success)                          \
-        << "rocBLAS: " << common::cuda::rocblasGetErrorString(e); \
+    hipblasStatus_t e = (func);                                  \
+    CHECK_EQ(e, HIPBLAS_STATUS_SUCCESS)                          \
+        << "hipBLAS: " << common::cuda::HipblasGetErrorString(e); \
   }
 
 /*!
@@ -132,9 +136,9 @@ inline const char* HiprngGetErrorString(hiprngStatus_t status) {
  */
 #define HIPRNG_CALL(func)                                       \
   {                                                             \
-    hiprngStatus_t e = (func);                                  \
+    hiprandStatus_t e = (func);                                  \
     CHECK_EQ(e, HIPRNG_STATUS_SUCCESS)                          \
-        << "hipRNG: " << common::cuda::HiprngGetErrorString(e); \
+        << "hipRNG: " << common::cuda::HiprandGetErrorString(e); \
   }
 
 #endif  // MXNET_USE_CUDA

@@ -54,8 +54,11 @@ endif
 
 ifeq ($(HIP_PLATFORM), hcc)
 	HIPINCLUDE += -I../Thrust
+else ifeq($(HIP_PLATFORM), nvcc)
+        HIPINCLUDE += -I../Thrust
 endif
-HIPINCLUDE += -I. -I/opt/rocm/rocblas/include -I/opt/rocm/hcrng/include -I/opt/rocm/hcfft/include
+
+HIPINCLUDE += -I.  -I. -I/opt/rocm/hipblas/include -I/opt/rocm/rocblas/include -I/opt/rocm/hiprand/include -I/opt/rocm/rocrand/include -I/opt/rocm/hcfft/include
 CFLAGS     += $(HIPINCLUDE) -I$(ROOTDIR)/mshadow/ -I$(ROOTDIR)/dmlc-core/include -fPIC -I$(NNVM_PATH)/include -Iinclude $(MSHADOW_CFLAGS)
 LDFLAGS    =  -pthread $(MSHADOW_LDFLAGS) $(DMLC_LDFLAGS)
 
@@ -80,7 +83,7 @@ ifeq ($(HIP_PLATFORM), hcc)
 endif
 
 ifeq ($(HIP_PLATFORM), nvcc)
-	HIPFLAGS = $(shell hipconfig -C) -DUSE_CUB
+	HIPFLAGS = $(shell hipconfig -C)
 endif
 
 
@@ -213,17 +216,19 @@ LIB_DEP += $(DMLC_CORE)/libdmlc.a $(NNVM_PATH)/lib/libnnvm.a
 ALL_DEP = $(OBJ) $(EXTRA_OBJ) $(PLUGIN_OBJ) $(LIB_DEP)
 
 ifeq ($(USE_CUDA), 1)
-	#CFLAGS += -I$(ROOTDIR)/cub-hip
+	CFLAGS += -I$(ROOTDIR)/cub-hip
 	ALL_DEP += $(CUOBJ) $(EXTRA_CUOBJ) $(PLUGIN_CUOBJ)
 	LDFLAGS += -L/opt/rocm/hip/lib -lhip_hcc
 	ifneq (, $(findstring nvcc, $(HIP_PLATFORM)))
-		LDFLAGS += -L/opt/rocm/rocblas/lib -lrocblas
-		LDFLAGS += -L/opt/rocm/hcrng/lib -lhiprng
-		LDFLAGS += -L/opt/rocm/hcfft/lib -lhcfft
+		LDFLAGS += -L/opt/rocm/hipblas/lib  -lhipblas
+		LDFLAGS += -L/opt/rocm/hiprand/lib  -lhiprand
+		LDFLAGS += -L/opt/rocm/hcfft/lib -lhipfft
 		LDFLAGS += -lcudart -lcuda -lcufft -lcublas
 	else
+		LDFLAGS += -L/opt/rocm/hipblas/lib  -lhipblas
 		LDFLAGS += -L/opt/rocm/rocblas/lib  -lrocblas
-		LDFLAGS += -L/opt/rocm/hcrng/lib   -lhiprng
+		LDFLAGS += -L/opt/rocm/hiprand/lib  -lhiprand
+		LDFLAGS += -L/opt/rocm/rocrand/lib  -lrocrand
 		LDFLAGS += -L/opt/rocm/hcfft/lib   -lhipfft
 	endif
 
