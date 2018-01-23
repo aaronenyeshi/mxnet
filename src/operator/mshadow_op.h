@@ -806,11 +806,12 @@ namespace isnan_typed {
   MSHADOW_XINLINE bool IsNan(volatile double val) {
     return isnan(val);
   }
+  #if defined(__HIP_PLATFORM_NVCC__) //guarded with NVCC flag as it throws error:call to 'isnan' is ambiguous on HCC
   template<>
   MSHADOW_XINLINE bool IsNan(volatile long double val) {
     return isnan(val);
   }
-
+  #endif
   template<>
   MSHADOW_XINLINE bool IsNan(volatile mshadow::half::half_t val) {
     return (val.half_ & 0x7fff) > 0x7c00;
